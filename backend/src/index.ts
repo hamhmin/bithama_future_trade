@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import authRouter from "./routes/auth.js";
 
 dotenv.config();
 
@@ -15,7 +16,9 @@ app.get("/", (req, res) => {
 });
 app.get("/future", (req, res) => {
   res.json({ message: "bit-hama future backend running!" });
+  console.log("future 접속");
 });
+app.use("/api/auth", authRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
