@@ -70,7 +70,7 @@ router.post("/login", async (req: Request, res: Response) => {
 // 내 정보 가져오기 (로그인 필요)
 router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
-    where: { id: req.userId },
+    where: { id: req.userId! },
     select: { id: true, email: true, nickname: true, balance: true },
   });
   res.json(user);
