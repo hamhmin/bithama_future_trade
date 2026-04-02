@@ -1,12 +1,48 @@
-export default async function Page() {
-  const response = await fetch(`http://localhost:4000/future`);
-  const jsonData = await response.json();
-  const msg = jsonData.message;
-  //   console.log(msg);
+import FutureHeader from "@/component/future/FutureHeader";
+import PositionPanel from "@/component/future/PositionPanel";
+import TradeInfo from "@/component/future/TradeInfo";
+import OrderBook from "@/component/future/OrderBook";
+import OrderPanel from "@/component/future/OrderPanel";
+import TradingChart from "@/component/future/TradingChart";
+
+export default function FuturePage() {
   return (
-    <>
-      <div>future 페이지입니다.</div>
-      <div>{msg}</div>
-    </>
+    <div
+      className="
+      h-screen bg-gray-900 text-white
+      grid grid-cols-12
+      grid-rows-[48px_1fr_200px]
+    "
+    >
+      {/* 헤더 */}
+      <div className="col-span-12 border-b border-gray-700">
+        <FutureHeader />
+      </div>
+
+      {/* 차트 */}
+      <div className="col-span-7 border-r border-gray-700">
+        <TradingChart />
+      </div>
+
+      {/* 호가창 - 2행 차지 */}
+      <div className="col-span-2 border-r border-gray-700">
+        <OrderBook />
+      </div>
+
+      {/* 주문패널 */}
+      <div className="col-span-3 ">
+        <OrderPanel />
+      </div>
+
+      {/* 포지션 */}
+      <div className="col-span-9   border-t border-r border-gray-700">
+        <PositionPanel />
+      </div>
+
+      {/* 거래정보 */}
+      <div className="col-span-3 border-t border-gray-700">
+        <TradeInfo />
+      </div>
+    </div>
   );
 }
