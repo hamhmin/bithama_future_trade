@@ -3,7 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRouter from "./routes/auth.js";
 import { connectBinance } from "./websocket.js";
-
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 dotenv.config();
 
 const app = express();
@@ -21,7 +22,15 @@ app.get("/future", (req, res) => {
 });
 app.use("/api/auth", authRouter);
 
-app.listen(PORT, () => {
+// HTTP 서버 + WebSocket 서버 같이 생성
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", () => {
+  console.log("프론트 WebSocket 연결됐어요!");
+});
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  connectBinance();
+  connectBinance(wss);
 });

@@ -22,3 +22,17 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Candle {
+  id       Int      @id @default(autoincrement())
+  symbol   String
+  interval String
+  openTime Int
+  open     Float
+  high     Float
+  low      Float
+  close    Float
+  volume   Float
+
+  @@unique([symbol, interval, openTime])
+}
