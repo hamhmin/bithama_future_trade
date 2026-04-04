@@ -43,6 +43,37 @@ export default function TradingChart() {
     // 현재 캔들 상태
     let currentCandle: any = null;
 
+    // DB에서 초기 캔들 데이터 가져오기
+    const loadInitialCandles = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:4000/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
+        );
+        const candles = await res.json();
+        console.log(candles);
+        // lightweight-charts 형식으로 변환
+        const formatted = candles.map((c: any) => ({
+          time: Math.floor(c.openTime / 1000), // ms → s
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        }));
+
+        candleSeries.setData(formatted);
+        chart.timeScale().fitContent();
+
+        // 마지막 캔들 저장
+        if (formatted.length > 0) {
+          currentCandle = formatted[formatted.length - 1];
+        }
+      } catch (err) {
+        console.error("초기 캔들 로딩 실패:", err);
+      }
+    };
+
+    loadInitialCandles();
+
     const socket = new WebSocket("ws://localhost:4000");
 
     socket.onmessage = (event) => {

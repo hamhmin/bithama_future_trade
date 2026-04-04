@@ -24,10 +24,10 @@ model User {
 }
 
 model Candle {
-  id       Int      @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   symbol   String
   interval String
-  openTime Int
+  openTime BigInt
   open     Float
   high     Float
   low      Float
@@ -36,3 +36,4 @@ model Candle {
 
   @@unique([symbol, interval, openTime])
 }
+

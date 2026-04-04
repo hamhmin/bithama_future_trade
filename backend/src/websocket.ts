@@ -11,6 +11,7 @@ export const connectBinance = (wss: WebSocketServer) => {
 
   ws.on("message", (data) => {
     const trade = JSON.parse(data.toString());
+    // console.log(trade);
     latestTrade = {
       price: trade.p,
       quantity: trade.q,
@@ -30,7 +31,7 @@ export const connectBinance = (wss: WebSocketServer) => {
   // 100ms마다 프론트에 브로드캐스트
   setInterval(() => {
     if (!latestTrade) return;
-    console.log(latestTrade);
+    // console.log(latestTrade);
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(latestTrade));

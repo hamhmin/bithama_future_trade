@@ -5,6 +5,9 @@ import authRouter from "./routes/auth.js";
 import { connectBinance } from "./websocket.js";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
+import { startCandleSync } from "./candle.js";
+import candleRouter from "./routes/candle.js";
+
 dotenv.config();
 
 const app = express();
@@ -22,6 +25,8 @@ app.get("/future", (req, res) => {
 });
 app.use("/api/auth", authRouter);
 
+app.use("/api/candles", candleRouter);
+
 // HTTP 서버 + WebSocket 서버 같이 생성
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
@@ -33,4 +38,5 @@ wss.on("connection", () => {
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   connectBinance(wss);
+  startCandleSync();
 });
