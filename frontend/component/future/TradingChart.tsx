@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createChart, CandlestickSeries } from "lightweight-charts";
+import { useFutureStore } from "@/store/useFutureStore";
 
 const INTERVALS = [
   { label: "1m", seconds: 60 },
@@ -16,7 +17,11 @@ const INTERVALS = [
 export default function TradingChart() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartInterval, setChartInterval] = useState(INTERVALS[0]);
+  const tradeData = useFutureStore((state) => state.tradeData);
+  const candleSeriesRef = useRef<any>(null);
+  const currentCandleRef = useRef<any>(null);
 
+  // 차트 초기화
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -40,8 +45,9 @@ export default function TradingChart() {
       wickUpColor: "#26a69a",
       wickDownColor: "#ef5350",
     });
-    // 현재 캔들 상태
-    let currentCandle: any = null;
+
+    candleSeriesRef.current = candleSeries;
+    currentCandleRef.current = null;
 
     // DB에서 초기 캔들 데이터 가져오기
     const loadInitialCandles = async () => {
@@ -50,10 +56,9 @@ export default function TradingChart() {
           `http://localhost:4000/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
         );
         const candles = await res.json();
-        console.log(candles);
-        // lightweight-charts 형식으로 변환
+
         const formatted = candles.map((c: any) => ({
-          time: Math.floor(c.openTime / 1000), // ms → s
+          time: Math.floor(c.openTime / 1000),
           open: c.open,
           high: c.high,
           low: c.low,
@@ -63,9 +68,8 @@ export default function TradingChart() {
         candleSeries.setData(formatted);
         chart.timeScale().fitContent();
 
-        // 마지막 캔들 저장
         if (formatted.length > 0) {
-          currentCandle = formatted[formatted.length - 1];
+          currentCandleRef.current = formatted[formatted.length - 1];
         }
       } catch (err) {
         console.error("초기 캔들 로딩 실패:", err);
@@ -74,37 +78,6 @@ export default function TradingChart() {
 
     loadInitialCandles();
 
-    const socket = new WebSocket("ws://localhost:4000");
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const price = parseFloat(data.price);
-      console.log(price);
-      const time =
-        Math.floor(data.time / 1000 / chartInterval.seconds) *
-        chartInterval.seconds;
-
-      if (!currentCandle || currentCandle.time !== time) {
-        // 새 캔들 시작
-        currentCandle = {
-          time,
-          open: price,
-          high: price,
-          low: price,
-          close: price,
-        };
-      } else {
-        // 기존 캔들 업데이트
-        currentCandle.high = Math.max(currentCandle.high, price);
-        currentCandle.low = Math.min(currentCandle.low, price);
-        currentCandle.close = price;
-      }
-
-      candleSeries.update(currentCandle);
-    };
-    chart.timeScale().fitContent();
-
-    // 리사이즈 대응
     const handleResize = () => {
       if (chartContainerRef.current) {
         chart.applyOptions({
@@ -117,16 +90,45 @@ export default function TradingChart() {
     window.addEventListener("resize", handleResize);
 
     return () => {
-      socket.close();
-
       window.removeEventListener("resize", handleResize);
       chart.remove();
+      candleSeriesRef.current = null;
     };
   }, [chartInterval]);
 
+  // tradeData 업데이트 시 캔들 갱신
+  useEffect(() => {
+    if (!tradeData || !candleSeriesRef.current) return;
+
+    const price = parseFloat(tradeData.price);
+    const time =
+      Math.floor(tradeData.time / 1000 / chartInterval.seconds) *
+      chartInterval.seconds;
+
+    const currentCandle = currentCandleRef.current;
+
+    if (!currentCandle || currentCandle.time !== time) {
+      currentCandleRef.current = {
+        time,
+        open: price,
+        high: price,
+        low: price,
+        close: price,
+      };
+    } else {
+      currentCandleRef.current = {
+        ...currentCandle,
+        high: Math.max(currentCandle.high, price),
+        low: Math.min(currentCandle.low, price),
+        close: price,
+      };
+    }
+
+    candleSeriesRef.current.update(currentCandleRef.current);
+  }, [tradeData]);
+
   return (
     <div className="w-full h-full flex flex-col">
-      {/* 봉 선택 버튼 */}
       <div className="flex gap-1 p-2 border-b border-gray-700">
         {INTERVALS.map((i) => (
           <button
@@ -142,8 +144,6 @@ export default function TradingChart() {
           </button>
         ))}
       </div>
-
-      {/* 차트 */}
       <div ref={chartContainerRef} className="flex-1" />
     </div>
   );

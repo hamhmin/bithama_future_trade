@@ -4,6 +4,7 @@ import TradeInfo from "@/component/future/TradeInfo";
 import OrderBook from "@/component/future/OrderBook";
 import OrderPanel from "@/component/future/OrderPanel";
 import TradingChart from "@/component/future/TradingChart";
+import SocketProvider from "@/component/future/SocketProvider";
 
 export default function FuturePage() {
   return (
@@ -14,6 +15,9 @@ export default function FuturePage() {
       grid-rows-[48px_1fr_200px]
     "
     >
+      {/* 소켓 여는 컴포넌트 */}
+      <SocketProvider />
+
       {/* 헤더 */}
       <div className="col-span-12 border-b border-gray-700">
         <FutureHeader />
