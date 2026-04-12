@@ -1,12 +1,8 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// backend/prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
 }
-
 
 datasource db {
   provider = "mysql"
@@ -14,13 +10,74 @@ datasource db {
 }
 
 model User {
+  id               Int              @id @default(autoincrement())
+  email            String           @unique
+  password         String
+  nickname         String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  wallet           Wallet?
+  positions        Position[]
+  orders           Order[]
+  fundingHistories FundingHistory[]
+}
+
+model Wallet {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  nickname  String
+  userId    Int      @unique
   balance   Float    @default(0)
-  createdAt DateTime @default(now())
+  locked    Float    @default(0)
+  user      User     @relation(fields: [userId], references: [id])
   updatedAt DateTime @updatedAt
+}
+
+model Position {
+  id               Int              @id @default(autoincrement())
+  userId           Int
+  symbol           String           @default("BTCUSDT")
+  side             String           // "long" | "short"
+  size             Float            // BTC 수량
+  entryPrice       Float
+  leverage         Int              @default(10)
+  margin           Float            // 투입 증거금 (USDT)
+  liquidationPrice Float
+  marginType       String           @default("isolated")
+  status           String           @default("open")
+  pnl              Float            @default(0)
+  user             User             @relation(fields: [userId], references: [id])
+  orders           Order[]
+  fundingHistories FundingHistory[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model Order {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  positionId Int?
+  symbol     String    @default("BTCUSDT")
+  side       String    // "long" | "short"
+  type       String    // "market" | "limit"
+  price      Float?
+  size       Float
+  leverage   Int       @default(10)
+  margin     Float
+  status     String    @default("open")
+  user       User      @relation(fields: [userId], references: [id])
+  position   Position? @relation(fields: [positionId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model FundingHistory {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  positionId Int
+  amount     Float
+  rate       Float
+  user       User     @relation(fields: [userId], references: [id])
+  position   Position @relation(fields: [positionId], references: [id])
+  createdAt  DateTime @default(now())
 }
 
 model Candle {
@@ -36,4 +93,3 @@ model Candle {
 
   @@unique([symbol, interval, openTime])
 }
-

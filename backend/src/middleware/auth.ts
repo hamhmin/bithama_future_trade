@@ -1,3 +1,4 @@
+// backend/src/middleware/auth.ts
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
@@ -10,10 +11,11 @@ export const authMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
-  const token = req.headers.authorization; // "Bearer 토큰" 에서 토큰만 추출
+  // 헤더 대신 쿠키에서 토큰 읽기
+  const token = req.cookies?.token;
 
   if (!token) {
-    res.status(401).json({ message: "토큰이 없어요." });
+    res.status(401).json({ message: "로그인이 필요해요." });
     return;
   }
 

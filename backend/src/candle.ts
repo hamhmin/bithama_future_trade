@@ -39,7 +39,7 @@ export const fetchAndSaveCandles = async (symbol: string, interval: string) => {
         },
       });
     }
-    console.log(`${symbol} ${interval} 캔들 저장 완료!`);
+    // console.log(`${symbol} ${interval} 캔들 저장 완료!`);
   } catch (err) {
     console.error(`${symbol} ${interval} 캔들 저장 실패:`, err);
   }

@@ -1,20 +1,59 @@
 import { create } from "zustand";
 
 interface TradeData {
+  type: string;
   price: string;
   quantity: string;
   time: number;
 }
+interface OrderItem {
+  price: string;
+  quantity: string;
+}
+interface DepthData {
+  type: string;
+  bids: OrderItem[]; // string[] 대신 OrderItem[] 사용
+  asks: OrderItem[];
+}
 
 interface FutureStore {
-  tradeData: TradeData | null; //소켓에서 받은 최신 데이터
+  tradeData: TradeData | null; //소켓에서 받은 체결가 최신 데이터
+  depthData: DepthData; //소켓에서 받은 호가창 최신 데이터
   // setTradeData: (data: TradeData) => void; //tradeData 바꾸는 함수
   socket: WebSocket | null; //열려있는 소켓 객체
   connectSocket: () => void; //소켓 여는 함수
   disconnectSocket: () => void; //소켓 닫는 함수
 }
 
+const dummyDepthData = {
+  type: "호가창",
+  bids: [
+    { price: "68408.14", quantity: "4.83671" },
+    { price: "68408.13", quantity: "0.00016" },
+    { price: "68408.12", quantity: "0.10810" },
+    { price: "68408.11", quantity: "0.14397" },
+    { price: "68408.10", quantity: "0.12573" },
+    { price: "68408.00", quantity: "0.00120" },
+    { price: "68407.84", quantity: "0.00309" },
+    { price: "68407.67", quantity: "0.08778" },
+    { price: "68407.45", quantity: "0.00239" },
+    { price: "68407.28", quantity: "0.00021" },
+  ],
+  asks: [
+    { price: "68408.15", quantity: "0.38872" },
+    { price: "68408.16", quantity: "0.00032" },
+    { price: "68408.19", quantity: "0.00024" },
+    { price: "68408.20", quantity: "0.05040" },
+    { price: "68408.55", quantity: "0.00008" },
+    { price: "68409.88", quantity: "0.00008" },
+    { price: "68411.27", quantity: "0.00027" },
+    { price: "68411.30", quantity: "0.00008" },
+    { price: "68411.31", quantity: "0.00008" },
+    { price: "68411.60", quantity: "0.00008" },
+  ],
+};
 export const useFutureStore = create<FutureStore>((set, get) => ({
+  depthData: dummyDepthData,
   tradeData: null,
   socket: null,
   // setTradeData: (data) => set({ tradeData: data }),
@@ -27,7 +66,13 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      set({ tradeData: data });
+      // console.log(data);
+      if (data.type === "체결가") {
+        set({ tradeData: data });
+      }
+      if (data.type === "호가창") {
+        set({ depthData: data });
+      }
     };
 
     socket.onclose = () => {

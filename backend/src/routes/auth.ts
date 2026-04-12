@@ -1,3 +1,4 @@
+// backend/src/routes/auth.ts
 import { Router } from "express";
 import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
@@ -28,11 +29,20 @@ router.post("/register", async (req: Request, res: Response) => {
       data: { email, password: hashed, nickname },
     });
 
+    // 회원가입 시 지갑도 자동 생성
+    await prisma.wallet.create({
+      data: {
+        userId: user.id,
+        balance: 100000, // 테스트용 초기 잔고 10만 USDT
+      },
+    });
+
     res.status(201).json({ message: "회원가입 성공!", userId: user.id });
   } catch (err) {
     res.status(500).json({ message: "서버 오류" });
   }
 });
+
 // 로그인
 router.post("/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -52,28 +62,49 @@ router.post("/login", async (req: Request, res: Response) => {
       return;
     }
 
-    // JWT 토큰 발급
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
-      expiresIn: "7d",
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: "7d" }
+    );
+
+    // httpOnly 쿠키로 토큰 전송
+    res.cookie("token", token, {
+      httpOnly: true,   // JS에서 접근 불가 → XSS 방어
+      secure: false,    // 개발환경은 false, 배포 시 true로 변경
+      sameSite: "lax",  // CSRF 방어
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
 
     res.json({
       message: "로그인 성공!",
       userId: user.id,
-      token,
       nickname: user.nickname,
     });
   } catch (err) {
     res.status(500).json({ message: "서버 오류" });
   }
 });
-// 내 정보 가져오기 (로그인 필요)
+
+// 로그아웃
+router.post("/logout", (req: Request, res: Response) => {
+  res.clearCookie("token");
+  res.json({ message: "로그아웃 성공!" });
+});
+
+// 내 정보
 router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId! },
-    select: { id: true, email: true, nickname: true, balance: true },
+    select: { id: true, email: true, nickname: true },
   });
-  res.json(user);
+
+  const wallet = await prisma.wallet.findUnique({
+    where: { userId: req.userId! },
+    select: { balance: true, locked: true },
+  });
+
+  res.json({ ...user, wallet });
 });
 
 export default router;

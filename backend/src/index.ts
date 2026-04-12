@@ -2,20 +2,25 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRouter from "./routes/auth.js";
-import { connectBinance } from "./websocket.js";
+import { connectBinanceQuote, connectBinanceCall } from "./websocket.js";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { startCandleSync } from "./candle.js";
 import candleRouter from "./routes/candle.js";
+import futureRouter from "./routes/future.js"; 
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000", // 프론트 주소
+  credentials: true, // 쿠키 허용 (중요!)
+}));
 app.use(express.json());
-
+app.use(cookieParser());
 app.get("/", (req, res) => {
   res.json({ message: "bit-hama backend running!" });
 });
@@ -27,6 +32,8 @@ app.use("/api/auth", authRouter);
 
 app.use("/api/candles", candleRouter);
 
+app.use("/api/future", futureRouter);
+
 // HTTP 서버 + WebSocket 서버 같이 생성
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
@@ -37,6 +44,7 @@ wss.on("connection", () => {
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  connectBinance(wss);
+  connectBinanceQuote(wss);
+  connectBinanceCall(wss);
   startCandleSync();
 });
