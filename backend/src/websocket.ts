@@ -1,7 +1,6 @@
 import WebSocket, { WebSocketServer } from "ws";
+import prisma from "./prisma.js";
 
-// let latestTrade: any = null;
-// 타입 정의를 통해 any 사용 지양
 interface TradeData {
   type: string;
   price: string;
@@ -15,9 +14,188 @@ interface DepthData {
   asks: string[];
 }
 
+// 청산가 계산
+const MAINTENANCE_MARGIN_RATE = 0.005;
+const calcLiquidationPrice = (
+  side: string,
+  entryPrice: number,
+  leverage: number,
+): number => {
+  if (side === "long") {
+    return entryPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE);
+  } else {
+    return entryPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE);
+  }
+};
+
+// 자동 청산 체크
+const checkLiquidation = async (currentPrice: number) => {
+  try {
+    const positions = await prisma.position.findMany({
+      where: {
+        status: "open",
+        OR: [
+          {
+            side: "long",
+            liquidationPrice: { gte: currentPrice },
+          },
+          {
+            side: "short",
+            liquidationPrice: { lte: currentPrice },
+          },
+        ],
+      },
+    });
+
+    if (positions.length === 0) return;
+
+    for (const position of positions) {
+      await prisma.$transaction(async (tx) => {
+        await tx.position.update({
+          where: { id: position.id },
+          data: {
+            status: "liquidated",
+            pnl: -position.margin,
+          },
+        });
+
+        await tx.order.create({
+          data: {
+            userId: position.userId,
+            positionId: position.id,
+            side: position.side,
+            type: "market",
+            size: position.size,
+            leverage: position.leverage,
+            margin: position.margin,
+            status: "filled",
+            price: currentPrice,
+          },
+        });
+
+        // locked 해제, balance는 증가 없음 (증거금 전액 손실)
+        await tx.wallet.update({
+          where: { userId: position.userId },
+          data: {
+            locked: { decrement: position.margin },
+          },
+        });
+      });
+
+      console.log(`포지션 ${position.id} 강제청산! 현재가: ${currentPrice}`);
+    }
+  } catch (err) {
+    console.error("청산 체크 오류:", err);
+  }
+};
+
+// 지정가 자동 체결 체크
+const checkLimitOrders = async (currentPrice: number) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        status: "open",
+        type: "limit",
+        OR: [
+          {
+            side: "long",
+            price: { gte: currentPrice },
+          },
+          {
+            side: "short",
+            price: { lte: currentPrice },
+          },
+        ],
+      },
+    });
+
+    if (orders.length === 0) return;
+
+    for (const order of orders) {
+      await prisma.$transaction(async (tx) => {
+        const liquidationPrice = calcLiquidationPrice(
+          order.side,
+          order.price!,
+          order.leverage,
+        );
+
+        // 기존 같은 방향 포지션 찾기
+        const existing = await tx.position.findFirst({
+          where: {
+            userId: order.userId,
+            side: order.side,
+            status: "open",
+            symbol: "BTCUSDT",
+          },
+        });
+
+        if (existing) {
+          // 기존 포지션 합산
+          const newSize = existing.size + order.size;
+          const newMargin = existing.margin + order.margin;
+          const newEntryPrice =
+            (existing.entryPrice * existing.size + order.price! * order.size) /
+            newSize;
+          const newLiquidationPrice = calcLiquidationPrice(
+            order.side,
+            newEntryPrice,
+            order.leverage,
+          );
+
+          await tx.position.update({
+            where: { id: existing.id },
+            data: {
+              size: newSize,
+              margin: newMargin,
+              entryPrice: newEntryPrice,
+              liquidationPrice: newLiquidationPrice,
+            },
+          });
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              status: "filled",
+              positionId: existing.id,
+            },
+          });
+        } else {
+          // 새 포지션 생성
+          const position = await tx.position.create({
+            data: {
+              userId: order.userId,
+              side: order.side,
+              size: order.size,
+              entryPrice: order.price!,
+              leverage: order.leverage,
+              margin: order.margin,
+              liquidationPrice,
+            },
+          });
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              status: "filled",
+              positionId: position.id,
+            },
+          });
+        }
+      });
+
+      console.log(`지정가 주문 ${order.id} 체결! 현재가: ${currentPrice}`);
+    }
+  } catch (err) {
+    console.error("지정가 체결 오류:", err);
+  }
+};
+
 // 바이낸스 체결가 호출 ws
 export const connectBinanceQuote = (wss: WebSocketServer) => {
-  const ws = new WebSocket("wss://stream.binance.com/ws/btcusdt@trade");
+  // 기존 현물(Spot): wss://stream.binance.com/ws/btcusdt@trade
+  // trade->aggTrade : 같은시간 같은 가격 거래 한번에 묶어서 보내줌
+  // 변경 선물(USD-M Futures):
+  const ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
   let latestTrade: TradeData | null = null;
   let lastSentTrade: TradeData | null = null;
 
@@ -27,7 +205,6 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
 
   ws.on("message", (data) => {
     const trade = JSON.parse(data.toString());
-    // console.log(trade);
     latestTrade = {
       type: "체결가",
       price: trade.p,
@@ -45,11 +222,10 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
     console.error("WebSocket 오류:", err);
   });
 
-  // 100ms마다 프론트에 브로드캐스트
-  setInterval(() => {
+  // 100ms마다 브로드캐스트 + 청산/지정가 체크
+  setInterval(async () => {
     if (!latestTrade) return;
 
-    // 3개 다 같으면 생략
     if (
       lastSentTrade &&
       lastSentTrade.price === latestTrade.price &&
@@ -58,19 +234,24 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
     ) {
       return;
     }
-    // console.log(latestTrade);
 
     lastSentTrade = latestTrade;
+    const currentPrice = parseFloat(latestTrade.price);
 
+    // 프론트 브로드캐스트
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(latestTrade));
       }
     });
+
+    // 자동 청산 + 지정가 체결 체크
+    await checkLiquidation(currentPrice);
+    await checkLimitOrders(currentPrice);
   }, 100);
 };
 
-// 바이낸스 호가창 호출 ws
+// 바이낸스 호가창 호출 ws (기존 코드 그대로)
 export const connectBinanceCall = (wss: WebSocketServer) => {
   const ws = new WebSocket(`wss://stream.binance.com/ws/btcusdt@depth10`);
 
@@ -93,20 +274,15 @@ export const connectBinanceCall = (wss: WebSocketServer) => {
       }));
     };
 
-    // console.log(trade);
     latestTrade = {
       type: "호가창",
       bids: formatOrders(trade.bids),
       asks: formatOrders(trade.asks),
     };
 
-    // console.log(latestTrade);
-
     const currentString = JSON.stringify(latestTrade);
 
-    if (currentString === lastSentString) {
-      return;
-    }
+    if (currentString === lastSentString) return;
     lastSentString = currentString;
 
     wss.clients.forEach((client) => {
