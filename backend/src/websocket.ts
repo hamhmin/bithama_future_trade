@@ -16,6 +16,9 @@ interface DepthData {
   asks: string[];
 }
 
+// 유저별 소켓 Map
+export const userSocketMap = new Map<number, WebSocket>();
+
 // 청산가 계산
 const MAINTENANCE_MARGIN_RATE = 0.005;
 const calcLiquidationPrice = (
@@ -29,7 +32,13 @@ const calcLiquidationPrice = (
     return entryPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE);
   }
 };
-
+// 유저에게 이벤트 전송
+export const sendToUser = (userId: number, data: object) => {
+  const clientWs = userSocketMap.get(userId);
+  if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+    clientWs.send(JSON.stringify(data));
+  }
+};
 // 자동 청산 체크
 const checkLiquidation = async (currentPrice: number) => {
   try {
@@ -99,6 +108,11 @@ const checkLiquidation = async (currentPrice: number) => {
       });
 
       console.log(`포지션 ${position.id} 강제청산! 현재가: ${currentPrice}`);
+      sendToUser(position.userId, {
+        type: "liquidated",
+        positionId: position.id,
+        message: "포지션이 강제청산됐어요!",
+      });
     }
   } catch (err) {
     console.error("청산 체크 오류:", err);
@@ -200,6 +214,11 @@ const checkLimitOrders = async (currentPrice: number) => {
       });
 
       console.log(`지정가 주문 ${order.id} 체결! 현재가: ${currentPrice}`);
+      sendToUser(order.userId, {
+        type: "filled",
+        orderId: order.id,
+        message: "지정가 주문이 체결됐어요!",
+      });
     }
   } catch (err) {
     console.error("지정가 체결 오류:", err);
@@ -214,6 +233,30 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   const ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
   let latestTrade: TradeData | null = null;
   let lastSentTrade: TradeData | null = null;
+  // 프론트 소켓 연결 시 userId 등록
+  wss.on("connection", (clientWs) => {
+    clientWs.on("message", (data) => {
+      try {
+        const msg = JSON.parse(data.toString());
+
+        // 프론트에서 auth 메시지 보내면 Map에 등록
+        if (msg.type === "auth" && msg.userId) {
+          userSocketMap.set(msg.userId, clientWs);
+          console.log(`유저 ${msg.userId} 소켓 등록됐어요!`);
+        }
+      } catch {}
+    });
+
+    // 연결 끊기면 Map에서 제거
+    clientWs.on("close", () => {
+      userSocketMap.forEach((ws, userId) => {
+        if (ws === clientWs) {
+          userSocketMap.delete(userId);
+          console.log(`유저 ${userId} 소켓 제거됐어요!`);
+        }
+      });
+    });
+  });
 
   ws.on("open", () => {
     console.log("바이낸스 체결가 WebSocket 연결됐어요!");

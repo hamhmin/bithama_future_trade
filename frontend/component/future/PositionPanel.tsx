@@ -36,6 +36,8 @@ type AuthStatus = "loading" | "guest" | "logged-in";
 export default function PositionPanel() {
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
+  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
+  const setShouldRefresh = useFutureStore((state) => state.setShouldRefresh);
 
   const [tab, setTab] = useState<Tab>("positions");
   const [positions, setPositions] = useState<Position[]>([]);
@@ -94,19 +96,19 @@ export default function PositionPanel() {
 
   useEffect(() => {
     if (authStatus !== "logged-in") return;
-    if (tab === "positions") fetchPositions();
-    if (tab === "orders") fetchOrders();
+
+    // 탭 상관없이 항상 둘 다 fetch
+    fetchPositions();
+    fetchOrders();
     if (tab === "history") fetchHistory();
   }, [tab, authStatus]);
 
   useEffect(() => {
-    if (authStatus !== "logged-in") return;
-    const interval = setInterval(() => {
-      if (tab === "positions") fetchPositions();
-      if (tab === "orders") fetchOrders();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [tab, authStatus]);
+    if (!shouldRefresh) return;
+    fetchPositions();
+    fetchOrders();
+    setShouldRefresh(false);
+  }, [shouldRefresh]);
 
   const closePosition = async (positionId: number) => {
     if (!confirm("포지션을 청산할까요?")) return;

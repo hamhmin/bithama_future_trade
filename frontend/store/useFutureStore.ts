@@ -27,6 +27,8 @@ interface FutureStore {
   disconnectSocket: () => void; //소켓 닫는 함수
   authStatus: AuthStatus;
   setAuthStatus: (status: AuthStatus) => void;
+  shouldRefresh: boolean;
+  setShouldRefresh: (v: boolean) => void;
 }
 
 const dummyDepthData = {
@@ -71,6 +73,17 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       // console.log(data);
+
+      // 체결/청산 이벤트 수신 추가
+      if (
+        data.type === "filled" ||
+        data.type === "liquidated" ||
+        data.type === "ordered"
+      ) {
+        set({ shouldRefresh: true });
+        return;
+      }
+
       if (data.type === "체결가") {
         set({ tradeData: data });
       }
@@ -97,4 +110,6 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
   },
   authStatus: "loading",
   setAuthStatus: (status) => set({ authStatus: status }),
+  shouldRefresh: false,
+  setShouldRefresh: (v: boolean) => set({ shouldRefresh: v }),
 }));

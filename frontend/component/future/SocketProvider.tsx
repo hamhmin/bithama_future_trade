@@ -20,7 +20,27 @@ export default function SocketProvider() {
         const res = await fetch("http://localhost:4000/api/auth/me", {
           credentials: "include",
         });
-        setAuthStatus(res.ok ? "logged-in" : "guest");
+        if (res.ok) {
+          const data = await res.json();
+          setAuthStatus("logged-in");
+
+          // 소켓에 userId 전송
+          const socket = useFutureStore.getState().socket;
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "auth", userId: data.id }));
+          } else {
+            // 소켓 연결 전이면 연결 후 전송
+            const interval = setInterval(() => {
+              const s = useFutureStore.getState().socket;
+              if (s && s.readyState === WebSocket.OPEN) {
+                s.send(JSON.stringify({ type: "auth", userId: data.id }));
+                clearInterval(interval);
+              }
+            }, 100);
+          }
+        } else {
+          setAuthStatus("guest");
+        }
       } catch {
         setAuthStatus("guest");
       }

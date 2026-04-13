@@ -4,6 +4,7 @@ import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { latestPrice } from "../websocket.js";
+import { sendToUser } from "../websocket.js";
 
 const router = Router();
 
@@ -223,7 +224,10 @@ router.post(
 
           return { position, order };
         });
-
+        sendToUser(userId, {
+          type: "filled",
+          message: "시장가 주문이 체결됐어요!",
+        });
         res.json({ message: "시장가 주문 체결!", ...result });
       } else {
         // 지정가
@@ -251,6 +255,11 @@ router.post(
           });
 
           return { order };
+        });
+
+        sendToUser(userId, {
+          type: "ordered",
+          message: "지정가 주문 등록됐어요!",
         });
 
         res.json({ message: "지정가 주문 등록!", ...result });

@@ -26,12 +26,37 @@ export default function OrderPanel() {
   const [marginTypeLocked, setMarginTypeLocked] = useState(false); // 포지션 있으면 잠김
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
+  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
 
   // 현재 오픈 포지션 가져오기
   const [openPosition, setOpenPosition] = useState<{
     leverage: number;
     marginType: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!shouldRefresh || authStatus !== "logged-in") return;
+    // fetchPosition이 useEffect 안에 있어서 직접 호출 불가
+    // side나 authStatus를 트리거로 재실행시키는 대신
+    // 임시 fetch로 처리
+    const refresh = async () => {
+      const [posRes, ordRes] = await Promise.all([
+        fetch("http://localhost:4000/api/future/positions", {
+          credentials: "include",
+        }),
+        fetch("http://localhost:4000/api/future/orders", {
+          credentials: "include",
+        }),
+      ]);
+      if (!posRes.ok || !ordRes.ok) return;
+      const positions = await posRes.json();
+      const orders = await ordRes.json();
+      const existingPos = positions.find((p: any) => p.side === side);
+      setOpenPosition(existingPos ?? null);
+      setMarginTypeLocked(positions.length > 0 || orders.length > 0);
+    };
+    refresh();
+  }, [shouldRefresh]);
 
   // 로그인 상태 체크
   useEffect(() => {
@@ -68,19 +93,25 @@ export default function OrderPanel() {
   useEffect(() => {
     const fetchPosition = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/future/positions", {
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        // console.log("포지션 데이터:", data); // ← 찍어보기
-        // console.log("현재 side:", side); // ← 찍어보기
-        // 같은 방향 포지션 찾기
-        const existing = data.find((p: any) => p.side === side);
-        // console.log("찾은 포지션:", existing); // ← 찍어보기
+        const [posRes, ordRes] = await Promise.all([
+          fetch("http://localhost:4000/api/future/positions", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:4000/api/future/orders", {
+            credentials: "include",
+          }),
+        ]);
 
-        setOpenPosition(existing ?? null);
-        setMarginTypeLocked(data.length > 0); // 포지션 하나라도 있으면 잠금
+        if (!posRes.ok || !ordRes.ok) return;
+
+        const positions = await posRes.json();
+        const orders = await ordRes.json();
+
+        const existingPos = positions.find((p: any) => p.side === side);
+        setOpenPosition(existingPos ?? null);
+
+        // 포지션 or 미체결 주문 있으면 잠금
+        setMarginTypeLocked(positions.length > 0 || orders.length > 0);
       } catch {}
     };
 
