@@ -3,17 +3,46 @@ import type { Response } from "express";
 import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { latestPrice } from "../websocket.js";
 
 const router = Router();
 
 // 유지마진율 0.5%
 const MAINTENANCE_MARGIN_RATE = 0.005;
 
+// Isolated 청산가
+const calcIsolatedLiqPrice = (
+  side: string,
+  entryPrice: number,
+  leverage: number,
+): number => {
+  if (side === "long") {
+    return entryPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE);
+  } else {
+    return entryPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE);
+  }
+};
+
+// Cross 청산가
+// 지갑 전체 잔고(balance + locked)가 버퍼
+const calcCrossLiqPrice = (
+  side: string,
+  entryPrice: number,
+  size: number,
+  walletTotal: number, // balance + locked 전체
+): number => {
+  if (side === "long") {
+    return entryPrice - (walletTotal * (1 - MAINTENANCE_MARGIN_RATE)) / size;
+  } else {
+    return entryPrice + (walletTotal * (1 - MAINTENANCE_MARGIN_RATE)) / size;
+  }
+};
+
 // 청산가 계산
 function calcLiquidationPrice(
   side: string,
   entryPrice: number,
-  leverage: number
+  leverage: number,
 ): number {
   if (side === "long") {
     return entryPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE);
@@ -23,38 +52,318 @@ function calcLiquidationPrice(
 }
 
 // 주문 API
-router.post("/order", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const { side, type, price, size, leverage = 10 } = req.body;
+router.post(
+  "/order",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const { side, type, price, size, leverage = 10 } = req.body;
 
-  // 입력값 검증
-  if (!side || !type || !size || !leverage) {
-    res.status(400).json({ message: "필수 값이 빠졌어요." });
-    return;
-  }
-  if (!["long", "short"].includes(side)) {
-    res.status(400).json({ message: "side는 long 또는 short이어야 해요." });
-    return;
-  }
-  if (!["market", "limit"].includes(type)) {
-    res.status(400).json({ message: "type은 market 또는 limit이어야 해요." });
-    return;
-  }
-  if (type === "limit" && !price) {
-    res.status(400).json({ message: "지정가 주문엔 price가 필요해요." });
-    return;
-  }
+    // 유저 마진타입 설정 가져오기
+    const setting = await prisma.userSymbolSetting.findUnique({
+      where: { userId_symbol: { userId, symbol: "BTCUSDT" } },
+    });
+    const marginType = setting?.marginType ?? "isolated";
 
-  // 지갑 확인
-  const wallet = await prisma.wallet.findUnique({ where: { userId } });
-  if (!wallet) {
-    res.status(400).json({ message: "지갑이 없어요." });
-    return;
-  }
+    if (!side || !type || !size || !leverage) {
+      res.status(400).json({ message: "필수 값이 빠졌어요." });
+      return;
+    }
+    if (!["long", "short"].includes(side)) {
+      res.status(400).json({ message: "side는 long 또는 short이어야 해요." });
+      return;
+    }
+    if (!["market", "limit"].includes(type)) {
+      res.status(400).json({ message: "type은 market 또는 limit이어야 해요." });
+      return;
+    }
+    if (!["isolated", "cross"].includes(marginType)) {
+      res
+        .status(400)
+        .json({ message: "marginType은 isolated 또는 cross이어야 해요." });
+      return;
+    }
+    if (type === "limit" && !price) {
+      res.status(400).json({ message: "지정가 주문엔 price가 필요해요." });
+      return;
+    }
 
-  // 현재가 가져오기
-  let executionPrice = price;
-  if (type === "market") {
+    const wallet = await prisma.wallet.findUnique({ where: { userId } });
+    if (!wallet) {
+      res.status(400).json({ message: "지갑이 없어요." });
+      return;
+    }
+
+    // 현재가 가져오기
+    let executionPrice = price;
+    if (type === "market") {
+      if (!latestPrice) {
+        res.status(500).json({ message: "현재가를 가져올 수 없어요." });
+        return;
+      }
+      executionPrice = latestPrice;
+    }
+
+    // 증거금 계산
+    const margin = (executionPrice * size) / leverage;
+
+    // 잔고 확인 (둘 다 증거금만큼 필요)
+    if (wallet.balance < margin) {
+      res.status(400).json({ message: "잔고가 부족해요." });
+      return;
+    }
+
+    // 청산가 계산
+    const walletTotal = wallet.balance + wallet.locked;
+    const liquidationPrice =
+      marginType === "isolated"
+        ? calcIsolatedLiqPrice(side, executionPrice, leverage)
+        : calcCrossLiqPrice(side, executionPrice, size, walletTotal);
+
+    try {
+      if (type === "market") {
+        const result = await prisma.$transaction(async (tx) => {
+          await tx.wallet.update({
+            where: { userId },
+            data: {
+              balance: { decrement: margin },
+              locked: { increment: margin },
+            },
+          });
+
+          // 기존 같은 방향 + 같은 마진타입 포지션 찾기
+          const existing = await tx.position.findFirst({
+            where: {
+              userId,
+              side,
+              status: "open",
+              symbol: "BTCUSDT",
+              marginType, // 마진타입도 같아야 합산
+            },
+          });
+
+          let position;
+
+          if (existing) {
+            const newSize = parseFloat((existing.size + size).toFixed(8));
+            const newMargin = parseFloat((existing.margin + margin).toFixed(8));
+            const newEntryPrice = parseFloat(
+              (
+                (existing.entryPrice * existing.size + executionPrice * size) /
+                newSize
+              ).toFixed(2),
+            );
+
+            // Cross면 업데이트된 지갑 잔고로 청산가 재계산
+            const updatedWallet = await tx.wallet.findUnique({
+              where: { userId },
+            });
+            const newWalletTotal =
+              updatedWallet!.balance + updatedWallet!.locked;
+
+            const newLiquidationPrice = parseFloat(
+              (marginType === "isolated"
+                ? calcIsolatedLiqPrice(side, newEntryPrice, leverage)
+                : calcCrossLiqPrice(
+                    side,
+                    newEntryPrice,
+                    newSize,
+                    newWalletTotal,
+                  )
+              ).toFixed(2),
+            );
+
+            console.log("합산 계산:", {
+              existing: {
+                entryPrice: existing.entryPrice,
+                size: existing.size,
+              },
+              new: { executionPrice, size },
+              newEntryPrice,
+              newSize,
+            });
+
+            position = await tx.position.update({
+              where: { id: existing.id },
+              data: {
+                size: newSize,
+                margin: newMargin,
+                entryPrice: newEntryPrice,
+                liquidationPrice: newLiquidationPrice,
+              },
+            });
+          } else {
+            position = await tx.position.create({
+              data: {
+                userId,
+                side,
+                size,
+                entryPrice: executionPrice,
+                leverage,
+                margin,
+                liquidationPrice,
+                marginType, // 저장
+              },
+            });
+          }
+
+          const order = await tx.order.create({
+            data: {
+              userId,
+              positionId: position.id,
+              side,
+              type,
+              size,
+              leverage,
+              margin,
+              status: "filled",
+              price: executionPrice,
+            },
+          });
+
+          return { position, order };
+        });
+
+        res.json({ message: "시장가 주문 체결!", ...result });
+      } else {
+        // 지정가
+        const result = await prisma.$transaction(async (tx) => {
+          await tx.wallet.update({
+            where: { userId },
+            data: {
+              balance: { decrement: margin },
+              locked: { increment: margin },
+            },
+          });
+
+          const order = await tx.order.create({
+            data: {
+              userId,
+              side,
+              type,
+              price: executionPrice,
+              size,
+              leverage,
+              margin,
+              marginType, // 저장
+              status: "open",
+            },
+          });
+
+          return { order };
+        });
+
+        res.json({ message: "지정가 주문 등록!", ...result });
+      }
+    } catch (err) {
+      console.error("주문 오류:", err);
+      res.status(500).json({ message: "서버 오류" });
+    }
+  },
+);
+
+// 내 포지션 조회
+router.get(
+  "/positions",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const positions = await prisma.position.findMany({
+      where: { userId, status: "open" },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(positions);
+  },
+);
+
+// 내 주문 조회
+router.get(
+  "/orders",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const orders = await prisma.order.findMany({
+      where: { userId, status: "open" },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(orders);
+  },
+);
+
+// 주문 취소
+router.delete(
+  "/order/:id",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const orderId = parseInt(req.params.id);
+
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+    if (!order || order.userId !== userId) {
+      res.status(404).json({ message: "주문을 찾을 수 없어요." });
+      return;
+    }
+    if (order.status !== "open") {
+      res.status(400).json({ message: "취소할 수 없는 주문이에요." });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // locked 해제, balance 복구
+      await tx.wallet.update({
+        where: { userId },
+        data: {
+          balance: { increment: order.margin },
+          locked: { decrement: order.margin },
+        },
+      });
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: "cancelled" },
+      });
+    });
+
+    res.json({ message: "주문 취소 완료!" });
+  },
+);
+router.get(
+  "/history",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const orders = await prisma.order.findMany({
+      where: { userId, status: "filled" },
+      orderBy: { createdAt: "desc" },
+      take: 50, // 최근 50개만
+    });
+    res.json(orders);
+  },
+);
+// 포지션 청산
+router.post(
+  "/position/:id/close",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const positionId = parseInt(req.params.id);
+
+    // 포지션 확인
+    const position = await prisma.position.findUnique({
+      where: { id: positionId },
+    });
+
+    if (!position || position.userId !== userId) {
+      res.status(404).json({ message: "포지션을 찾을 수 없어요." });
+      return;
+    }
+    if (position.status !== "open") {
+      res.status(400).json({ message: "이미 청산된 포지션이에요." });
+      return;
+    }
+
+    // 현재가 가져오기
     const latest = await prisma.candle.findFirst({
       where: { symbol: "BTCUSDT", interval: "1m" },
       orderBy: { openTime: "desc" },
@@ -63,287 +372,272 @@ router.post("/order", authMiddleware, async (req: AuthRequest, res: Response) =>
       res.status(500).json({ message: "현재가를 가져올 수 없어요." });
       return;
     }
-    executionPrice = latest.close;
-  }
 
-  // 증거금 계산
-  const margin = (executionPrice * size) / leverage;
+    const currentPrice = latest.close;
 
-  // 잔고 확인
-  if (wallet.balance < margin) {
-    res.status(400).json({ message: "잔고가 부족해요." });
-    return;
-  }
-
-  // 청산가 계산
-  const liquidationPrice = calcLiquidationPrice(side, executionPrice, leverage);
-
-  try {
-    if (type === "market") {
-      const result = await prisma.$transaction(async (tx) => {
-        // 잔고 차감
-        await tx.wallet.update({
-          where: { userId },
-          data: {
-            balance: { decrement: margin },
-            locked: { increment: margin },
-          },
-        });
-
-        // 기존 같은 방향 오픈 포지션 찾기
-        const existing = await tx.position.findFirst({
-          where: { userId, side, status: "open", symbol: "BTCUSDT" },
-        });
-
-        let position;
-
-        if (existing) {
-          // 기존 포지션 합산
-          const newSize = existing.size + size;
-          const newMargin = existing.margin + margin;
-
-          // 평균 진입가 계산
-          const newEntryPrice =
-            (existing.entryPrice * existing.size + executionPrice * size) /
-            newSize;
-
-          // 새 평균 진입가 기준으로 청산가 재계산
-          const newLiquidationPrice = calcLiquidationPrice(
-            side,
-            newEntryPrice,
-            leverage
-          );
-
-          position = await tx.position.update({
-            where: { id: existing.id },
-            data: {
-              size: newSize,
-              margin: newMargin,
-              entryPrice: newEntryPrice,
-              liquidationPrice: newLiquidationPrice,
-            },
-          });
-        } else {
-          // 새 포지션 생성
-          position = await tx.position.create({
-            data: {
-              userId,
-              side,
-              size,
-              entryPrice: executionPrice,
-              leverage,
-              margin,
-              liquidationPrice,
-            },
-          });
-        }
-
-        // 주문 기록
-        const order = await tx.order.create({
-          data: {
-            userId,
-            positionId: position.id,
-            side,
-            type,
-            size,
-            leverage,
-            margin,
-            status: "filled",
-            price: executionPrice,
-          },
-        });
-
-        return { position, order };
-      });
-
-      res.json({ message: "시장가 주문 체결!", ...result });
+    // 손익 계산
+    let pnl = 0;
+    if (position.side === "long") {
+      pnl = (currentPrice - position.entryPrice) * position.size;
     } else {
-      // 지정가는 기존과 동일 (체결 전이라 합산 불필요)
-      const result = await prisma.$transaction(async (tx) => {
+      pnl = (position.entryPrice - currentPrice) * position.size;
+    }
+
+    // 반환금액 = 증거금 + 손익
+    const returnAmount = position.margin + pnl;
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        // 포지션 상태 업데이트
+        await tx.position.update({
+          where: { id: positionId },
+          data: {
+            status: "closed",
+            pnl,
+          },
+        });
+
+        // 청산 주문 기록
+        await tx.order.create({
+          data: {
+            userId,
+            positionId,
+            side: position.side,
+            type: "market",
+            size: position.size,
+            leverage: position.leverage,
+            margin: position.margin,
+            status: "filled",
+            price: currentPrice,
+          },
+        });
+
+        // 지갑 정산
+        // locked 해제 + 손익 반영
         await tx.wallet.update({
           where: { userId },
           data: {
-            balance: { decrement: margin },
-            locked: { increment: margin },
+            // 반환금액이 0보다 작으면 (손실이 증거금보다 크면) 0으로 처리
+            balance: { increment: Math.max(returnAmount, 0) },
+            locked: { decrement: position.margin },
           },
         });
-
-        const order = await tx.order.create({
-          data: {
-            userId,
-            side,
-            type,
-            price: executionPrice,
-            size,
-            leverage,
-            margin,
-            status: "open",
-          },
-        });
-
-        return { order };
       });
 
-      res.json({ message: "지정가 주문 등록!", ...result });
+      res.json({
+        message: "포지션 청산 완료!",
+        pnl: pnl.toFixed(2),
+        returnAmount: Math.max(returnAmount, 0).toFixed(2),
+        currentPrice,
+      });
+    } catch (err) {
+      console.error("청산 오류:", err);
+      res.status(500).json({ message: "서버 오류" });
     }
-  } catch (err) {
-    console.error("주문 오류:", err);
-    res.status(500).json({ message: "서버 오류" });
-  }
-});
+  },
+);
 
-// 내 포지션 조회
-router.get("/positions", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const positions = await prisma.position.findMany({
-    where: { userId, status: "open" },
-    orderBy: { createdAt: "desc" },
-  });
-  res.json(positions);
-});
+// 증거금 추가 API
+router.post(
+  "/position/:id/add-margin",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const positionId = parseInt(req.params.id);
+    const { amount } = req.body;
 
-// 내 주문 조회
-router.get("/orders", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const orders = await prisma.order.findMany({
-    where: { userId, status: "open" },
-    orderBy: { createdAt: "desc" },
-  });
-  res.json(orders);
-});
+    if (!amount || amount <= 0) {
+      res.status(400).json({ message: "추가할 증거금을 입력해주세요." });
+      return;
+    }
 
-// 주문 취소
-router.delete("/order/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const orderId = parseInt(req.params.id);
+    const [position, wallet] = await Promise.all([
+      prisma.position.findUnique({ where: { id: positionId } }),
+      prisma.wallet.findUnique({ where: { userId } }),
+    ]);
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!position || position.userId !== userId) {
+      res.status(404).json({ message: "포지션을 찾을 수 없어요." });
+      return;
+    }
+    if (position.status !== "open") {
+      res.status(400).json({ message: "이미 청산된 포지션이에요." });
+      return;
+    }
+    if (!wallet || wallet.balance < amount) {
+      res.status(400).json({ message: "잔고가 부족해요." });
+      return;
+    }
 
-  if (!order || order.userId !== userId) {
-    res.status(404).json({ message: "주문을 찾을 수 없어요." });
-    return;
-  }
-  if (order.status !== "open") {
-    res.status(400).json({ message: "취소할 수 없는 주문이에요." });
-    return;
-  }
+    // 새 증거금으로 청산가 재계산
+    const newMargin = position.margin + amount;
+    const effectiveLeverage = (position.entryPrice * position.size) / newMargin;
+    const newLiquidationPrice =
+      position.side === "long"
+        ? position.entryPrice *
+          (1 - 1 / effectiveLeverage + MAINTENANCE_MARGIN_RATE)
+        : position.entryPrice *
+          (1 + 1 / effectiveLeverage - MAINTENANCE_MARGIN_RATE);
 
-  await prisma.$transaction(async (tx) => {
-    // locked 해제, balance 복구
-    await tx.wallet.update({
-      where: { userId },
-      data: {
-        balance: { increment: order.margin },
-        locked: { decrement: order.margin },
-      },
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.position.update({
+          where: { id: positionId },
+          data: {
+            margin: newMargin,
+            liquidationPrice: newLiquidationPrice,
+          },
+        });
+
+        await tx.wallet.update({
+          where: { userId },
+          data: {
+            balance: { decrement: amount },
+            locked: { increment: amount },
+          },
+        });
+      });
+
+      res.json({
+        message: "증거금 추가 완료!",
+        newMargin,
+        newLiquidationPrice,
+      });
+    } catch (err) {
+      console.error("증거금 추가 오류:", err);
+      res.status(500).json({ message: "서버 오류" });
+    }
+  },
+);
+
+// 레버리지 변경 API (상향만 가능)
+router.post(
+  "/position/:id/leverage",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const positionId = parseInt(req.params.id);
+    const { leverage } = req.body;
+
+    if (!leverage || leverage <= 0) {
+      res.status(400).json({ message: "레버리지를 입력해주세요." });
+      return;
+    }
+
+    const position = await prisma.position.findUnique({
+      where: { id: positionId },
     });
 
-    await tx.order.update({
-      where: { id: orderId },
-      data: { status: "cancelled" },
-    });
-  });
+    if (!position || position.userId !== userId) {
+      res.status(404).json({ message: "포지션을 찾을 수 없어요." });
+      return;
+    }
+    if (position.status !== "open") {
+      res.status(400).json({ message: "이미 청산된 포지션이에요." });
+      return;
+    }
 
-  res.json({ message: "주문 취소 완료!" });
-});
-router.get("/history", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const orders = await prisma.order.findMany({
-    where: { userId, status: "filled" },
-    orderBy: { createdAt: "desc" },
-    take: 50, // 최근 50개만
-  });
-  res.json(orders);
-});
-// 포지션 청산
-router.post("/position/:id/close", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const positionId = parseInt(req.params.id);
+    // isol만 상향만 가능
+    if (position.marginType === "isolated" && leverage <= position.leverage) {
+      res.status(400).json({
+        message: `Isolated는 현재 레버리지(${position.leverage}x)보다 높게만 설정 가능해요.`,
+      });
+      return;
+    }
 
-  // 포지션 확인
-  const position = await prisma.position.findUnique({
-    where: { id: positionId },
-  });
+    // 새 레버리지로 청산가 재계산
+    const newLiquidationPrice =
+      position.side === "long"
+        ? position.entryPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE)
+        : position.entryPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE);
 
-  if (!position || position.userId !== userId) {
-    res.status(404).json({ message: "포지션을 찾을 수 없어요." });
-    return;
-  }
-  if (position.status !== "open") {
-    res.status(400).json({ message: "이미 청산된 포지션이에요." });
-    return;
-  }
+    try {
+      await prisma.$transaction(async (tx) => {
+        // 새 레버리지 기준 증거금 계산
+        const newMargin = (position.entryPrice * position.size) / leverage;
+        const marginDiff = position.margin - newMargin; // 줄어든 증거금
 
-  // 현재가 가져오기
-  const latest = await prisma.candle.findFirst({
-    where: { symbol: "BTCUSDT", interval: "1m" },
-    orderBy: { openTime: "desc" },
-  });
-  if (!latest) {
-    res.status(500).json({ message: "현재가를 가져올 수 없어요." });
-    return;
-  }
+        await tx.position.update({
+          where: { id: positionId },
+          data: {
+            leverage,
+            margin: newMargin,
+            liquidationPrice: newLiquidationPrice,
+          },
+        });
 
-  const currentPrice = latest.close;
-
-  // 손익 계산
-  let pnl = 0;
-  if (position.side === "long") {
-    pnl = (currentPrice - position.entryPrice) * position.size;
-  } else {
-    pnl = (position.entryPrice - currentPrice) * position.size;
-  }
-
-  // 반환금액 = 증거금 + 손익
-  const returnAmount = position.margin + pnl;
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      // 포지션 상태 업데이트
-      await tx.position.update({
-        where: { id: positionId },
-        data: {
-          status: "closed",
-          pnl,
-        },
+        // 레버리지 올리면 증거금이 줄어드니까 차액을 balance로 환원
+        await tx.wallet.update({
+          where: { userId },
+          data: {
+            balance: { increment: marginDiff },
+            locked: { decrement: marginDiff },
+          },
+        });
       });
 
-      // 청산 주문 기록
-      await tx.order.create({
-        data: {
-          userId,
-          positionId,
-          side: position.side,
-          type: "market",
-          size: position.size,
-          leverage: position.leverage,
-          margin: position.margin,
-          status: "filled",
-          price: currentPrice,
-        },
+      res.json({
+        message: "레버리지 변경 완료!",
+        leverage,
+        newLiquidationPrice,
       });
+    } catch (err) {
+      console.error("레버리지 변경 오류:", err);
+      res.status(500).json({ message: "서버 오류" });
+    }
+  },
+);
+// 마진타입 조회
+router.get(
+  "/setting",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
 
-      // 지갑 정산
-      // locked 해제 + 손익 반영
-      await tx.wallet.update({
-        where: { userId },
-        data: {
-          // 반환금액이 0보다 작으면 (손실이 증거금보다 크면) 0으로 처리
-          balance: { increment: Math.max(returnAmount, 0) },
-          locked: { decrement: position.margin },
-        },
-      });
+    const setting = await prisma.userSymbolSetting.findUnique({
+      where: { userId_symbol: { userId, symbol: "BTCUSDT" } },
     });
 
     res.json({
-      message: "포지션 청산 완료!",
-      pnl: pnl.toFixed(2),
-      returnAmount: Math.max(returnAmount, 0).toFixed(2),
-      currentPrice,
+      marginType: setting?.marginType ?? "isolated", // 없으면 기본값 isolated
     });
-  } catch (err) {
-    console.error("청산 오류:", err);
-    res.status(500).json({ message: "서버 오류" });
-  }
-});
+  },
+);
+
+// 마진타입 변경
+router.post(
+  "/setting/margin-type",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const { marginType } = req.body;
+
+    if (!["isolated", "cross"].includes(marginType)) {
+      res.status(400).json({ message: "잘못된 마진타입이에요." });
+      return;
+    }
+
+    // 오픈 포지션 있으면 변경 불가
+    const openPosition = await prisma.position.findFirst({
+      where: { userId, status: "open", symbol: "BTCUSDT" },
+    });
+
+    if (openPosition) {
+      res.status(400).json({
+        message:
+          "포지션 보유 중엔 마진타입을 변경할 수 없어요. 모든 포지션을 청산 후 변경해주세요.",
+      });
+      return;
+    }
+
+    // 설정 저장 (없으면 생성, 있으면 업데이트)
+    await prisma.userSymbolSetting.upsert({
+      where: { userId_symbol: { userId, symbol: "BTCUSDT" } },
+      create: { userId, symbol: "BTCUSDT", marginType },
+      update: { marginType },
+    });
+
+    res.json({ message: "마진타입 변경 완료!", marginType });
+  },
+);
 export default router;

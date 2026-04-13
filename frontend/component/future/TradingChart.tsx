@@ -14,12 +14,55 @@ const INTERVALS = [
   { label: "1d", seconds: 86400 },
 ];
 
+type Position = {
+  id: number;
+  side: string;
+  entryPrice: number;
+  liquidationPrice: number;
+  leverage: number;
+};
+
+type Order = {
+  id: number;
+  side: string;
+  price: number | null;
+  type: string;
+};
+
 export default function TradingChart() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartInterval, setChartInterval] = useState(INTERVALS[0]);
   const tradeData = useFutureStore((state) => state.tradeData);
   const candleSeriesRef = useRef<any>(null);
   const currentCandleRef = useRef<any>(null);
+  const priceLineRefs = useRef<any[]>([]);
+
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  // 포지션 + 주문 가져오기
+  const fetchLines = async () => {
+    try {
+      const [posRes, ordRes] = await Promise.all([
+        fetch("http://localhost:4000/api/future/positions", {
+          credentials: "include",
+        }),
+        fetch("http://localhost:4000/api/future/orders", {
+          credentials: "include",
+        }),
+      ]);
+      if (posRes.ok) setPositions(await posRes.json());
+      if (ordRes.ok) setOrders(await ordRes.json());
+    } catch {
+      // 비로그인이면 빈 배열 유지
+    }
+  };
+
+  useEffect(() => {
+    fetchLines();
+    const interval = setInterval(fetchLines, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // 차트 초기화
   useEffect(() => {
@@ -48,8 +91,8 @@ export default function TradingChart() {
 
     candleSeriesRef.current = candleSeries;
     currentCandleRef.current = null;
+    priceLineRefs.current = []; // 차트 새로 만들면 라인도 초기화
 
-    // DB에서 초기 캔들 데이터 가져오기
     const loadInitialCandles = async () => {
       try {
         const res = await fetch(
@@ -93,6 +136,7 @@ export default function TradingChart() {
       window.removeEventListener("resize", handleResize);
       chart.remove();
       candleSeriesRef.current = null;
+      priceLineRefs.current = [];
     };
   }, [chartInterval]);
 
@@ -126,6 +170,59 @@ export default function TradingChart() {
 
     candleSeriesRef.current.update(currentCandleRef.current);
   }, [tradeData]);
+
+  // 포지션/주문 라인 그리기
+  useEffect(() => {
+    if (!candleSeriesRef.current) return;
+
+    // 기존 라인 전부 제거
+    priceLineRefs.current.forEach((line) => {
+      try {
+        candleSeriesRef.current?.removePriceLine(line);
+      } catch {}
+    });
+    priceLineRefs.current = [];
+
+    // 포지션 라인
+    positions.forEach((pos) => {
+      // 진입가 라인
+      const entryLine = candleSeriesRef.current.createPriceLine({
+        price: pos.entryPrice,
+        color: pos.side === "long" ? "#22c55e" : "#ef4444",
+        lineWidth: 1,
+        lineStyle: 0, // 실선
+        axisLabelVisible: true,
+        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 진입가`,
+      });
+      priceLineRefs.current.push(entryLine);
+
+      // 청산가 라인
+      const liqLine = candleSeriesRef.current.createPriceLine({
+        price: pos.liquidationPrice,
+        color: "#f97316",
+        lineWidth: 1,
+        lineStyle: 3, // 점선
+        axisLabelVisible: true,
+        title: "청산가",
+      });
+      priceLineRefs.current.push(liqLine);
+    });
+
+    // 지정가 주문 라인
+    orders.forEach((order) => {
+      if (!order.price || order.type !== "limit") return;
+
+      const orderLine = candleSeriesRef.current.createPriceLine({
+        price: order.price,
+        color: order.side === "long" ? "#86efac" : "#fca5a5",
+        lineWidth: 1,
+        lineStyle: 1, // 파선
+        axisLabelVisible: true,
+        title: `${order.side === "long" ? "Long" : "Short"} 주문`,
+      });
+      priceLineRefs.current.push(orderLine);
+    });
+  }, [positions, orders]);
 
   return (
     <div className="w-full h-full flex flex-col">

@@ -1,6 +1,8 @@
 import WebSocket, { WebSocketServer } from "ws";
 import prisma from "./prisma.js";
 
+export let latestPrice: number = 0;
+
 interface TradeData {
   type: string;
   price: string;
@@ -31,18 +33,38 @@ const calcLiquidationPrice = (
 // 자동 청산 체크
 const checkLiquidation = async (currentPrice: number) => {
   try {
+    // Cross 포지션 청산가 먼저 재계산
+    const crossPositions = await prisma.position.findMany({
+      where: { status: "open", marginType: "cross" },
+      include: { user: { include: { wallet: true } } },
+    });
+
+    for (const pos of crossPositions) {
+      const wallet = pos.user.wallet;
+      if (!wallet) continue;
+
+      const walletTotal = wallet.balance + wallet.locked;
+      const newLiqPrice =
+        pos.side === "long"
+          ? pos.entryPrice -
+            (walletTotal * (1 - MAINTENANCE_MARGIN_RATE)) / pos.size
+          : pos.entryPrice +
+            (walletTotal * (1 - MAINTENANCE_MARGIN_RATE)) / pos.size;
+
+      // 청산가 업데이트
+      await prisma.position.update({
+        where: { id: pos.id },
+        data: { liquidationPrice: newLiqPrice },
+      });
+    }
+
+    // 청산 대상 찾기 (Isolated + Cross 통합)
     const positions = await prisma.position.findMany({
       where: {
         status: "open",
         OR: [
-          {
-            side: "long",
-            liquidationPrice: { gte: currentPrice },
-          },
-          {
-            side: "short",
-            liquidationPrice: { lte: currentPrice },
-          },
+          { side: "long", liquidationPrice: { gte: currentPrice } },
+          { side: "short", liquidationPrice: { lte: currentPrice } },
         ],
       },
     });
@@ -53,10 +75,7 @@ const checkLiquidation = async (currentPrice: number) => {
       await prisma.$transaction(async (tx) => {
         await tx.position.update({
           where: { id: position.id },
-          data: {
-            status: "liquidated",
-            pnl: -position.margin,
-          },
+          data: { status: "liquidated", pnl: -position.margin },
         });
 
         await tx.order.create({
@@ -73,12 +92,9 @@ const checkLiquidation = async (currentPrice: number) => {
           },
         });
 
-        // locked 해제, balance는 증가 없음 (증거금 전액 손실)
         await tx.wallet.update({
           where: { userId: position.userId },
-          data: {
-            locked: { decrement: position.margin },
-          },
+          data: { locked: { decrement: position.margin } },
         });
       });
 
@@ -205,6 +221,7 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
 
   ws.on("message", (data) => {
     const trade = JSON.parse(data.toString());
+    latestPrice = parseFloat(trade.p); // 실시간 가격 저장
     latestTrade = {
       type: "체결가",
       price: trade.p,

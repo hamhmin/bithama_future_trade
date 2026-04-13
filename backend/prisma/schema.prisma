@@ -20,6 +20,7 @@ model User {
   positions        Position[]
   orders           Order[]
   fundingHistories FundingHistory[]
+  symbolSettings UserSymbolSetting[]
 }
 
 model Wallet {
@@ -62,6 +63,7 @@ model Order {
   size       Float
   leverage   Int       @default(10)
   margin     Float
+  marginType String    @default("isolated")
   status     String    @default("open")
   user       User      @relation(fields: [userId], references: [id])
   position   Position? @relation(fields: [positionId], references: [id])
@@ -92,4 +94,16 @@ model Candle {
   volume   Float
 
   @@unique([symbol, interval, openTime])
+}
+
+model UserSymbolSetting {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  symbol     String   @default("BTCUSDT")
+  marginType String   @default("isolated")
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, symbol])
 }

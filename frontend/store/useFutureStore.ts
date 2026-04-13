@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+type AuthStatus = "loading" | "guest" | "logged-in";
+
 interface TradeData {
   type: string;
   price: string;
@@ -23,6 +25,8 @@ interface FutureStore {
   socket: WebSocket | null; //열려있는 소켓 객체
   connectSocket: () => void; //소켓 여는 함수
   disconnectSocket: () => void; //소켓 닫는 함수
+  authStatus: AuthStatus;
+  setAuthStatus: (status: AuthStatus) => void;
 }
 
 const dummyDepthData = {
@@ -91,4 +95,6 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
     get().socket?.close();
     set({ socket: null });
   },
+  authStatus: "loading",
+  setAuthStatus: (status) => set({ authStatus: status }),
 }));
