@@ -7,7 +7,7 @@ import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { startCandleSync } from "./candle.js";
 import candleRouter from "./routes/candle.js";
-import futureRouter from "./routes/future.js"; 
+import futureRouter from "./routes/future.js";
 import cookieParser from "cookie-parser";
 
 dotenv.config();
@@ -15,10 +15,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({
-  origin: "http://localhost:3000", // 프론트 주소
-  credentials: true, // 쿠키 허용 (중요!)
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000", // 프론트 주소
+    credentials: true, // 쿠키 허용 (중요!)
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 app.get("/", (req, res) => {
