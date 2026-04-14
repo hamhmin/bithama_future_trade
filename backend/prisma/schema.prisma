@@ -48,6 +48,8 @@ model Position {
   user             User             @relation(fields: [userId], references: [id])
   orders           Order[]
   fundingHistories FundingHistory[]
+  takeProfit Float?
+  stopLoss   Float?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }

@@ -18,6 +18,10 @@ export default function OrderForm({
   message,
   loading,
   authStatus,
+  takeProfit,
+  stopLoss,
+  onTakeProfitChange,
+  onStopLossChange,
   onPriceChange,
   onSizeChange,
   onSubmit,
@@ -36,6 +40,10 @@ export default function OrderForm({
   message: string;
   loading: boolean;
   authStatus: AuthStatus;
+  takeProfit: string;
+  stopLoss: string;
+  onTakeProfitChange: (v: string) => void;
+  onStopLossChange: (v: string) => void;
   onPriceChange: (v: string) => void;
   onSizeChange: (v: string) => void;
   onSubmit: () => void;
@@ -68,7 +76,35 @@ export default function OrderForm({
           className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
         />
       </div>
-
+      {/* TP/SL 입력 */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <span>TP / SL</span>
+          <span className="text-gray-600">선택사항</span>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1 flex flex-col gap-1">
+            <label className="text-green-400 text-xs">TP 목표가</label>
+            <input
+              type="number"
+              value={takeProfit}
+              onChange={(e) => onTakeProfitChange(e.target.value)}
+              placeholder="0.00"
+              className="bg-gray-800 border border-gray-700 rounded px-2 py-2 text-white text-xs focus:outline-none focus:border-green-500"
+            />
+          </div>
+          <div className="flex-1 flex flex-col gap-1">
+            <label className="text-red-400 text-xs">SL 손절가</label>
+            <input
+              type="number"
+              value={stopLoss}
+              onChange={(e) => onStopLossChange(e.target.value)}
+              placeholder="0.00"
+              className="bg-gray-800 border border-gray-700 rounded px-2 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+            />
+          </div>
+        </div>
+      </div>
       {/* 25/50/75/100% 프리셋 */}
       <div className="flex gap-1">
         {[25, 50, 75, 100].map((percent) => (

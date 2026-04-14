@@ -44,6 +44,8 @@ export default function OrderPanel() {
     locked: number;
   } | null>(null);
   const [orderTab, setOrderTab] = useState<"open" | "close">("open");
+  const [takeProfit, setTakeProfit] = useState("");
+  const [stopLoss, setStopLoss] = useState("");
 
   const minLeverage =
     openPosition?.marginType === "isolated" ? openPosition.leverage : 1;
@@ -164,6 +166,8 @@ export default function OrderPanel() {
           price: orderType === "limit" ? parseFloat(price) : undefined,
           size: parseFloat(size),
           leverage,
+          takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+          stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
         }),
       });
 
@@ -174,6 +178,8 @@ export default function OrderPanel() {
         setMessage(data.message ?? "주문 완료!");
         setSize("");
         setPrice("");
+        setTakeProfit("");
+        setStopLoss("");
       }
     } catch {
       setMessage("서버 오류");

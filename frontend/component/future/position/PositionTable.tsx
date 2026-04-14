@@ -14,6 +14,8 @@ type Position = {
   marginType: string;
   status: string;
   createdAt: string;
+  takeProfit: number | null;
+  stopLoss: number | null;
 };
 
 // 증거금 추가 모달
@@ -268,7 +270,131 @@ function LeverageModal({
     </div>
   );
 }
+// TP/SL 모달 컴포넌트
+function TpSlModal({
+  position,
+  onClose,
+  onSuccess,
+}: {
+  position: Position;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [takeProfit, setTakeProfit] = useState(
+    position.takeProfit?.toString() ?? "",
+  );
+  const [stopLoss, setStopLoss] = useState(position.stopLoss?.toString() ?? "");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:4000/api/future/position/${position.id}/tpsl`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            takeProfit: takeProfit ? parseFloat(takeProfit) : null,
+            stopLoss: stopLoss ? parseFloat(stopLoss) : null,
+          }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.message);
+      } else {
+        onSuccess();
+        onClose();
+      }
+    } catch {
+      setMessage("서버 오류");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-800 rounded-xl p-6 w-72 flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-white font-bold">TP / SL 설정</h3>
+
+        <div className="flex flex-col gap-1 text-xs text-gray-400">
+          <div className="flex justify-between">
+            <span>진입가</span>
+            <span className="text-white">
+              ${position.entryPrice.toLocaleString()}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>방향</span>
+            <span
+              className={
+                position.side === "long" ? "text-green-400" : "text-red-400"
+              }
+            >
+              {position.side === "long" ? "Long" : "Short"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-green-400 text-xs">TP 목표가 (USDT)</label>
+          <input
+            type="number"
+            value={takeProfit}
+            onChange={(e) => setTakeProfit(e.target.value)}
+            placeholder={
+              position.side === "long" ? "진입가보다 높게" : "진입가보다 낮게"
+            }
+            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-red-400 text-xs">SL 손절가 (USDT)</label>
+          <input
+            type="number"
+            value={stopLoss}
+            onChange={(e) => setStopLoss(e.target.value)}
+            placeholder={
+              position.side === "long" ? "진입가보다 낮게" : "진입가보다 높게"
+            }
+            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+          />
+        </div>
+
+        {message && (
+          <p className="text-red-400 text-xs text-center">{message}</p>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 rounded text-gray-400 bg-gray-700 hover:bg-gray-600 text-sm"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="flex-1 py-2 rounded text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-sm font-bold"
+          >
+            {loading ? "처리중..." : "설정"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // 메인 테이블
 export default function PositionTable({
   positions,
@@ -287,6 +413,7 @@ export default function PositionTable({
 
   const [addMarginTarget, setAddMarginTarget] = useState<Position | null>(null);
   const [leverageTarget, setLeverageTarget] = useState<Position | null>(null);
+  const [tpslTarget, setTpslTarget] = useState<Position | null>(null);
 
   const calcPnl = (position: Position) => {
     if (!currentPrice) return 0;
@@ -318,6 +445,7 @@ export default function PositionTable({
             <th className="px-3 py-2 text-right">수량</th>
             <th className="px-3 py-2 text-right">진입가</th>
             <th className="px-3 py-2 text-right">청산가</th>
+            <th className="px-3 py-2 text-right">TP/SL</th>
             <th className="px-3 py-2 text-right">증거금</th>
             <th className="px-3 py-2 text-right">미실현 손익</th>
             <th className="px-3 py-2 text-right">수익률</th>
@@ -376,6 +504,26 @@ export default function PositionTable({
                   ${pos.liquidationPrice.toLocaleString()}
                 </td>
                 <td className="px-3 py-2 text-right">
+                  <div className="flex flex-col items-end gap-0.5">
+                    <button
+                      onClick={() => setTpslTarget(pos)}
+                      className="text-xs hover:text-blue-400 transition-colors"
+                    >
+                      <span className="text-green-400">
+                        {pos.takeProfit
+                          ? `$${pos.takeProfit.toLocaleString()}`
+                          : "-"}
+                      </span>
+                      {" / "}
+                      <span className="text-red-400">
+                        {pos.stopLoss
+                          ? `$${pos.stopLoss.toLocaleString()}`
+                          : "-"}
+                      </span>
+                    </button>
+                  </div>
+                </td>
+                <td className="px-3 py-2 text-right">
                   <div className="flex flex-col items-end">
                     <span className="text-white">${pos.margin.toFixed(2)}</span>
                     {/* 증거금 추가 버튼 */}
@@ -432,6 +580,15 @@ export default function PositionTable({
         <LeverageModal
           position={leverageTarget}
           onClose={() => setLeverageTarget(null)}
+          onSuccess={onRefresh}
+        />
+      )}
+
+      {/* TP/SL 변경 모달 */}
+      {tpslTarget && (
+        <TpSlModal
+          position={tpslTarget}
+          onClose={() => setTpslTarget(null)}
           onSuccess={onRefresh}
         />
       )}

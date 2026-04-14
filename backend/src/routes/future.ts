@@ -58,7 +58,15 @@ router.post(
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
-    const { side, type, price, size, leverage = 10 } = req.body;
+    const {
+      side,
+      type,
+      price,
+      size,
+      leverage = 10,
+      takeProfit,
+      stopLoss,
+    } = req.body;
 
     // 유저 마진타입 설정 가져오기
     const setting = await prisma.userSymbolSetting.findUnique({
@@ -204,6 +212,8 @@ router.post(
                 margin,
                 liquidationPrice,
                 marginType, // 저장
+                takeProfit: takeProfit ?? null,
+                stopLoss: stopLoss ?? null,
               },
             });
           }
@@ -656,4 +666,61 @@ router.post(
     res.json({ message: "마진타입 변경 완료!", marginType });
   },
 );
+// TP/SL 설정
+router.post(
+  "/position/:id/tpsl",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const positionId = parseInt(req.params.id as string);
+    const { takeProfit, stopLoss } = req.body;
+
+    const position = await prisma.position.findUnique({
+      where: { id: positionId },
+    });
+
+    if (!position || position.userId !== userId) {
+      res.status(404).json({ message: "포지션을 찾을 수 없어요." });
+      return;
+    }
+    if (position.status !== "open") {
+      res.status(400).json({ message: "이미 청산된 포지션이에요." });
+      return;
+    }
+
+    // 검증
+    if (takeProfit) {
+      if (position.side === "long" && takeProfit <= position.entryPrice) {
+        res.status(400).json({ message: "Long TP는 진입가보다 높아야 해요." });
+        return;
+      }
+      if (position.side === "short" && takeProfit >= position.entryPrice) {
+        res.status(400).json({ message: "Short TP는 진입가보다 낮아야 해요." });
+        return;
+      }
+    }
+
+    if (stopLoss) {
+      if (position.side === "long" && stopLoss >= position.entryPrice) {
+        res.status(400).json({ message: "Long SL은 진입가보다 낮아야 해요." });
+        return;
+      }
+      if (position.side === "short" && stopLoss <= position.entryPrice) {
+        res.status(400).json({ message: "Short SL은 진입가보다 높아야 해요." });
+        return;
+      }
+    }
+
+    await prisma.position.update({
+      where: { id: positionId },
+      data: {
+        takeProfit: takeProfit ?? null,
+        stopLoss: stopLoss ?? null,
+      },
+    });
+
+    res.json({ message: "TP/SL 설정 완료!" });
+  },
+);
+
 export default router;

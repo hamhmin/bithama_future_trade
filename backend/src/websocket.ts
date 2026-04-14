@@ -67,13 +67,20 @@ const checkLiquidation = async (currentPrice: number) => {
       });
     }
 
-    // 청산 대상 찾기 (Isolated + Cross 통합)
+    // 청산 대상 찾기 (청산가 + TP/SL 통합)
     const positions = await prisma.position.findMany({
       where: {
         status: "open",
         OR: [
+          // 기존 청산가 조건
           { side: "long", liquidationPrice: { gte: currentPrice } },
           { side: "short", liquidationPrice: { lte: currentPrice } },
+          // TP 조건
+          { side: "long", takeProfit: { lte: currentPrice } },
+          { side: "short", takeProfit: { gte: currentPrice } },
+          // SL 조건
+          { side: "long", stopLoss: { gte: currentPrice } },
+          { side: "short", stopLoss: { lte: currentPrice } },
         ],
       },
     });
@@ -81,10 +88,45 @@ const checkLiquidation = async (currentPrice: number) => {
     if (positions.length === 0) return;
 
     for (const position of positions) {
+      // 청산 유형 판단
+      const isLiquidation =
+        (position.side === "long" &&
+          currentPrice <= position.liquidationPrice) ||
+        (position.side === "short" &&
+          currentPrice >= position.liquidationPrice);
+
+      const isTP =
+        position.takeProfit &&
+        ((position.side === "long" && currentPrice >= position.takeProfit) ||
+          (position.side === "short" && currentPrice <= position.takeProfit));
+
+      const isSL =
+        position.stopLoss &&
+        ((position.side === "long" && currentPrice <= position.stopLoss) ||
+          (position.side === "short" && currentPrice >= position.stopLoss));
+
+      // 손익 계산
+      const pnl =
+        position.side === "long"
+          ? (currentPrice - position.entryPrice) * position.size
+          : (position.entryPrice - currentPrice) * position.size;
+
+      const returnAmount = isLiquidation
+        ? 0 // 강제청산은 증거금 전액 손실
+        : Math.max(position.margin + pnl, 0);
+
+      const closeStatus = isLiquidation ? "liquidated" : "closed";
+
+      const closeMessage = isLiquidation
+        ? "포지션이 강제청산됐어요!"
+        : isTP
+          ? "TP 목표가에 도달해 청산됐어요!"
+          : "SL 손절가에 도달해 청산됐어요!";
+
       await prisma.$transaction(async (tx) => {
         await tx.position.update({
           where: { id: position.id },
-          data: { status: "liquidated", pnl: -position.margin },
+          data: { status: closeStatus, pnl },
         });
 
         await tx.order.create({
@@ -103,16 +145,22 @@ const checkLiquidation = async (currentPrice: number) => {
 
         await tx.wallet.update({
           where: { userId: position.userId },
-          data: { locked: { decrement: position.margin } },
+          data: {
+            balance: { increment: returnAmount },
+            locked: { decrement: position.margin },
+          },
         });
       });
 
-      console.log(`포지션 ${position.id} 강제청산! 현재가: ${currentPrice}`);
       sendToUser(position.userId, {
-        type: "liquidated",
+        type: isLiquidation ? "liquidated" : "filled",
         positionId: position.id,
-        message: "포지션이 강제청산됐어요!",
+        message: closeMessage,
       });
+
+      console.log(
+        `포지션 ${position.id} ${closeMessage} 현재가: ${currentPrice}`,
+      );
     }
   } catch (err) {
     console.error("청산 체크 오류:", err);
@@ -233,7 +281,6 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   const ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
   let latestTrade: TradeData | null = null;
   let lastSentTrade: TradeData | null = null;
-  
 
   ws.on("open", () => {
     console.log("바이낸스 체결가 WebSocket 연결됐어요!");

@@ -20,6 +20,8 @@ type Position = {
   entryPrice: number;
   liquidationPrice: number;
   leverage: number;
+  takeProfit: number | null;
+  stopLoss: number | null;
 };
 
 type Order = {
@@ -206,6 +208,32 @@ export default function TradingChart() {
         title: "청산가",
       });
       priceLineRefs.current.push(liqLine);
+
+      // TP 라인
+      if (pos.takeProfit) {
+        const tpLine = candleSeriesRef.current.createPriceLine({
+          price: pos.takeProfit,
+          color: "#22c55e",
+          lineWidth: 1,
+          lineStyle: 2, // 파선
+          axisLabelVisible: true,
+          title: "TP",
+        });
+        priceLineRefs.current.push(tpLine);
+      }
+
+      // SL 라인
+      if (pos.stopLoss) {
+        const slLine = candleSeriesRef.current.createPriceLine({
+          price: pos.stopLoss,
+          color: "#ef4444",
+          lineWidth: 1,
+          lineStyle: 2, // 파선
+          axisLabelVisible: true,
+          title: "SL",
+        });
+        priceLineRefs.current.push(slLine);
+      }
     });
 
     // 지정가 주문 라인
