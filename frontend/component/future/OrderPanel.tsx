@@ -27,6 +27,12 @@ export default function OrderPanel() {
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
   const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
+  const [showMarginModal, setShowMarginModal] = useState(false);
+  const [showLeverageModal, setShowLeverageModal] = useState(false);
+  const [wallet, setWallet] = useState<{
+    balance: number;
+    locked: number;
+  } | null>(null);
 
   // 현재 오픈 포지션 가져오기
   const [openPosition, setOpenPosition] = useState<{
@@ -113,6 +119,15 @@ export default function OrderPanel() {
         // 포지션 or 미체결 주문 있으면 잠금
         setMarginTypeLocked(positions.length > 0 || orders.length > 0);
       } catch {}
+
+      // 지갑 가져오기 (fetchPosition useEffect 안에 추가)
+      const walletRes = await fetch("http://localhost:4000/api/auth/me", {
+        credentials: "include",
+      });
+      if (walletRes.ok) {
+        const data = await walletRes.json();
+        setWallet(data.wallet);
+      }
     };
 
     if (authStatus === "logged-in") fetchPosition();
@@ -203,8 +218,50 @@ export default function OrderPanel() {
     }
   };
 
+  // 예상 청산가 계산
+  const MAINTENANCE_MARGIN_RATE = 0.005;
+  const previewLiqPrice =
+    executionPrice && parseFloat(size) > 0
+      ? marginType === "isolated"
+        ? side === "long"
+          ? executionPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE)
+          : executionPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE)
+        : 0 // cross는 지갑 잔고 필요해서 생략
+      : 0;
+
   return (
     <div className="w-full h-full flex flex-col p-3 gap-3 text-sm">
+      {/* 상단 마진타입 + 레버리지 버튼 */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => {
+            if (marginTypeLocked) return;
+            setShowMarginModal(true);
+          }}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs border transition-colors ${
+            marginTypeLocked
+              ? "border-gray-700 text-gray-500 cursor-not-allowed"
+              : "border-gray-600 text-gray-300 hover:border-blue-500 hover:text-white"
+          }`}
+        >
+          {marginType === "isolated" ? "Isolated" : "Cross"}
+          {!marginTypeLocked && <span className="text-gray-500">▾</span>}
+        </button>
+
+        <button
+          onClick={() => setShowLeverageModal(true)}
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs border border-gray-600 text-gray-300 hover:border-blue-500 hover:text-white transition-colors"
+        >
+          {leverage}x<span className="text-gray-500">▾</span>
+        </button>
+
+        {marginTypeLocked && (
+          <span className="text-yellow-400 text-xs">
+            포지션 청산 후 변경 가능
+          </span>
+        )}
+      </div>
+
       {/* Long / Short 탭 */}
       <div className="flex rounded overflow-hidden border border-gray-700">
         <button
@@ -228,38 +285,7 @@ export default function OrderPanel() {
           Short
         </button>
       </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex rounded overflow-hidden border border-gray-700 text-xs">
-          <button
-            onClick={() => handleMarginTypeChange("isolated")}
-            disabled={marginTypeLocked}
-            className={`flex-1 py-1 transition-colors ${
-              marginType === "isolated"
-                ? "bg-gray-600 text-white"
-                : "text-gray-500 hover:text-white"
-            } ${marginTypeLocked ? "cursor-not-allowed opacity-60" : ""}`}
-          >
-            Isolated
-          </button>
-          <button
-            onClick={() => handleMarginTypeChange("cross")}
-            disabled={marginTypeLocked}
-            className={`flex-1 py-1 transition-colors ${
-              marginType === "cross"
-                ? "bg-gray-600 text-white"
-                : "text-gray-500 hover:text-white"
-            } ${marginTypeLocked ? "cursor-not-allowed opacity-60" : ""}`}
-          >
-            Cross
-          </button>
-        </div>
-        {/* 잠금 안내 */}
-        {marginTypeLocked && (
-          <p className="text-yellow-400 text-xs text-center">
-            포지션 청산 후 변경 가능해요
-          </p>
-        )}
-      </div>
+
       {/* 시장가 / 지정가 탭 */}
       <div className="flex gap-2">
         {(["market", "limit"] as OrderType[]).map((t) => (
@@ -275,43 +301,6 @@ export default function OrderPanel() {
             {t === "market" ? "시장가" : "지정가"}
           </button>
         ))}
-      </div>
-
-      {/* 레버리지 */}
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-gray-400 text-xs">
-          <span>레버리지</span>
-          <span className="text-white font-bold">{leverage}x</span>
-        </div>
-        <input
-          type="range"
-          min={minLeverage}
-          max={100}
-          value={leverage < minLeverage ? minLeverage : leverage}
-          onChange={(e) => {
-            const val = parseInt(e.target.value);
-            if (val < minLeverage) return;
-            setLeverage(val);
-          }}
-          className="w-full accent-blue-500"
-        />
-
-        <div className="flex justify-between text-gray-600 text-xs">
-          <span>1x</span>
-          <span>25x</span>
-          <span>50x</span>
-          <span>75x</span>
-          <span>100x</span>
-        </div>
-        {/* <p className="text-white text-xs">{JSON.stringify(openPosition)}</p> */}
-
-        {/* // 안내 문구 추가 */}
-        {openPosition?.marginType === "isolated" && (
-          <p className="text-yellow-400 text-xs">
-            Isolated 포지션 보유 중 → {openPosition.leverage}x 이상만 설정
-            가능해요
-          </p>
-        )}
       </div>
 
       {/* 지정가 입력 */}
@@ -340,20 +329,26 @@ export default function OrderPanel() {
         />
       </div>
 
-      {/* 증거금 표시 */}
-      <div className="flex justify-between text-xs text-gray-400 bg-gray-800 rounded px-3 py-2">
-        <span>증거금</span>
-        <span className="text-white">
-          {margin > 0 ? `${margin.toFixed(2)} USDT` : "-"}
-        </span>
-      </div>
-
-      {/* 현재가 표시 */}
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>현재가</span>
-        <span className="text-white">
-          {currentPrice > 0 ? `$${currentPrice.toLocaleString()}` : "-"}
-        </span>
+      {/* 가용 잔고 + 증거금 */}
+      <div className="flex flex-col gap-1 bg-gray-800 rounded px-3 py-2 text-xs text-gray-400">
+        <div className="flex justify-between">
+          <span>가용 잔고</span>
+          <span className="text-white">
+            {wallet ? `${wallet.balance.toFixed(2)} USDT` : "-"}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>증거금</span>
+          <span className="text-white">
+            {margin > 0 ? `${margin.toFixed(2)} USDT` : "-"}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>예상 청산가</span>
+          <span className="text-orange-400">
+            {previewLiqPrice > 0 ? `$${previewLiqPrice.toLocaleString()}` : "-"}
+          </span>
+        </div>
       </div>
 
       {/* 메시지 */}
@@ -393,16 +388,98 @@ export default function OrderPanel() {
         </button>
       )}
 
-      {/* 게스트 모달 */}
-      {showModal && (
-        <GuestModal
-          onClose={() => setShowModal(false)}
-          onLogin={() => {
-            setAuthStatus("logged-in");
-            setShowModal(false);
-          }}
-        />
+      {/* 마진타입 변경 모달 */}
+      {showMarginModal && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]"
+          onClick={() => setShowMarginModal(false)}
+        >
+          <div
+            className="bg-gray-800 rounded-xl p-6 w-64 flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-white font-bold text-sm">마진 타입</h3>
+            <div className="flex flex-col gap-2">
+              {(["isolated", "cross"] as MarginType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    handleMarginTypeChange(type);
+                    setShowMarginModal(false);
+                  }}
+                  className={`py-2 rounded text-sm font-bold transition-colors ${
+                    marginType === type
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  {type === "isolated" ? "Isolated" : "Cross"}
+                </button>
+              ))}
+            </div>
+            <p className="text-gray-500 text-xs text-center">
+              {marginType === "isolated"
+                ? "포지션마다 증거금이 분리돼요"
+                : "지갑 전체가 증거금으로 사용돼요"}
+            </p>
+          </div>
+        </div>
       )}
+
+      {/* 레버리지 변경 모달 */}
+      {showLeverageModal && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]"
+          onClick={() => setShowLeverageModal(false)}
+        >
+          <div
+            className="bg-gray-800 rounded-xl p-6 w-64 flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-white font-bold text-sm">레버리지 설정</h3>
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>레버리지</span>
+                <span className="text-white font-bold">{leverage}x</span>
+              </div>
+              <input
+                type="range"
+                min={minLeverage}
+                max={100}
+                value={leverage < minLeverage ? minLeverage : leverage}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (val < minLeverage) return;
+                  setLeverage(val);
+                }}
+                className="w-full accent-blue-500"
+              />
+              <div className="flex justify-between text-gray-600 text-xs">
+                <span>{minLeverage}x</span>
+                <span>25x</span>
+                <span>50x</span>
+                <span>75x</span>
+                <span>100x</span>
+              </div>
+              {openPosition?.marginType === "isolated" && (
+                <p className="text-yellow-400 text-xs">
+                  Isolated 포지션 보유 중 → {openPosition.leverage}x 이상만
+                  가능해요
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setShowLeverageModal(false)}
+              className="w-full py-2 rounded text-white bg-blue-600 hover:bg-blue-500 text-sm font-bold"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 게스트 모달 */}
+      {showModal && <GuestModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }
