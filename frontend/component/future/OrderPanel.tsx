@@ -7,6 +7,7 @@ import MarginLeverageBar from "./order/MarginLeverageBar";
 import MarginModal from "./order/MarginModal";
 import LeverageModal from "./order/LeverageModal";
 import OrderForm from "./order/OrderForm";
+import CloseForm from "./order/CloseForm";
 
 type OrderType = "market" | "limit";
 type Side = "long" | "short";
@@ -42,6 +43,7 @@ export default function OrderPanel() {
     balance: number;
     locked: number;
   } | null>(null);
+  const [orderTab, setOrderTab] = useState<"open" | "close">("open");
 
   const minLeverage =
     openPosition?.marginType === "isolated" ? openPosition.leverage : 1;
@@ -190,68 +192,97 @@ export default function OrderPanel() {
         onMarginClick={() => setShowMarginModal(true)}
         onLeverageClick={() => setShowLeverageModal(true)}
       />
-
-      {/* Long / Short 탭 */}
       <div className="flex rounded overflow-hidden border border-gray-700">
         <button
-          onClick={() => setSide("long")}
-          className={`flex-1 py-2 font-bold transition-colors ${
-            side === "long"
-              ? "bg-green-600 text-white"
+          onClick={() => setOrderTab("open")}
+          className={`flex-1 py-1 text-xs font-bold transition-colors ${
+            orderTab === "open"
+              ? "bg-gray-600 text-white"
               : "text-gray-400 hover:text-white"
           }`}
         >
-          Long
+          Open
         </button>
         <button
-          onClick={() => setSide("short")}
-          className={`flex-1 py-2 font-bold transition-colors ${
-            side === "short"
-              ? "bg-red-600 text-white"
+          onClick={() => setOrderTab("close")}
+          className={`flex-1 py-1 text-xs font-bold transition-colors ${
+            orderTab === "close"
+              ? "bg-gray-600 text-white"
               : "text-gray-400 hover:text-white"
           }`}
         >
-          Short
+          Close
         </button>
       </div>
 
-      {/* 시장가 / 지정가 탭 */}
-      <div className="flex gap-2">
-        {(["market", "limit"] as OrderType[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setOrderType(t)}
-            className={`px-3 py-1 rounded text-xs transition-colors ${
-              orderType === t
-                ? "bg-blue-600 text-white"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            {t === "market" ? "시장가" : "지정가"}
-          </button>
-        ))}
-      </div>
+      {/* Long / Short 탭 */}
+      {orderTab === "open" ? (
+        <>
+          {/* Long / Short 탭 */}
+          <div className="flex rounded overflow-hidden border border-gray-700">
+            <button
+              onClick={() => setSide("long")}
+              className={`flex-1 py-2 font-bold transition-colors ${
+                side === "long"
+                  ? "bg-green-600 text-white"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Long
+            </button>
+            <button
+              onClick={() => setSide("short")}
+              className={`flex-1 py-2 font-bold transition-colors ${
+                side === "short"
+                  ? "bg-red-600 text-white"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Short
+            </button>
+          </div>
 
-      {/* 주문 폼 */}
-      <OrderForm
-        side={side}
-        orderType={orderType}
-        price={price}
-        size={size}
-        currentPrice={currentPrice}
-        margin={margin}
-        previewLiqPrice={previewLiqPrice}
-        wallet={wallet}
-        message={message}
-        loading={loading}
-        authStatus={authStatus}
-        executionPrice={executionPrice}
-        leverage={leverage}
-        onPriceChange={setPrice}
-        onSizeChange={setSize}
-        onSubmit={handleSubmit}
-        onLoginClick={() => setShowModal(true)}
-      />
+          {/* 시장가 / 지정가 탭 */}
+          <div className="flex gap-2">
+            {(["market", "limit"] as OrderType[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setOrderType(t)}
+                className={`px-3 py-1 rounded text-xs transition-colors ${
+                  orderType === t
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {t === "market" ? "시장가" : "지정가"}
+              </button>
+            ))}
+          </div>
+
+          {/* 주문 폼 */}
+          <OrderForm
+            side={side}
+            orderType={orderType}
+            price={price}
+            size={size}
+            currentPrice={currentPrice}
+            margin={margin}
+            previewLiqPrice={previewLiqPrice}
+            wallet={wallet}
+            message={message}
+            loading={loading}
+            authStatus={authStatus}
+            executionPrice={executionPrice}
+            leverage={leverage}
+            onPriceChange={setPrice}
+            onSizeChange={setSize}
+            onSubmit={handleSubmit}
+            onLoginClick={() => setShowModal(true)}
+          />
+        </>
+      ) : (
+        <CloseForm onSuccess={fetchPosition} />
+      )}
 
       {/* 마진타입 모달 */}
       {showMarginModal && (

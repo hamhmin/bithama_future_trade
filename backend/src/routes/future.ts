@@ -305,7 +305,7 @@ router.delete(
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
-    const orderId = parseInt(req.params.id);
+    const orderId = parseInt(req.params.id as string);
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
 
@@ -356,9 +356,9 @@ router.post(
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
-    const positionId = parseInt(req.params.id);
+    const positionId = parseInt(req.params.id as string);
+    const { size, type = "market", price } = req.body; // size 추가
 
-    // 포지션 확인
     const position = await prisma.position.findUnique({
       where: { id: positionId },
     });
@@ -372,72 +372,79 @@ router.post(
       return;
     }
 
-    // 현재가 가져오기
-    const latest = await prisma.candle.findFirst({
-      where: { symbol: "BTCUSDT", interval: "1m" },
-      orderBy: { openTime: "desc" },
-    });
-    if (!latest) {
+    // size 없으면 전체 청산
+    const closeSize = size ?? position.size;
+
+    if (closeSize <= 0 || closeSize > position.size) {
+      res.status(400).json({ message: "올바른 수량을 입력해주세요." });
+      return;
+    }
+
+    const currentPrice = type === "market" ? latestPrice : price;
+    if (!currentPrice) {
       res.status(500).json({ message: "현재가를 가져올 수 없어요." });
       return;
     }
 
-    const currentPrice = latest.close;
+    const isFullClose = closeSize === position.size;
+    const ratio = closeSize / position.size;
+    const closingMargin = position.margin * ratio;
 
-    // 손익 계산
-    let pnl = 0;
-    if (position.side === "long") {
-      pnl = (currentPrice - position.entryPrice) * position.size;
-    } else {
-      pnl = (position.entryPrice - currentPrice) * position.size;
-    }
+    const pnl =
+      position.side === "long"
+        ? (currentPrice - position.entryPrice) * closeSize
+        : (position.entryPrice - currentPrice) * closeSize;
 
-    // 반환금액 = 증거금 + 손익
-    const returnAmount = position.margin + pnl;
+    const returnAmount = Math.max(closingMargin + pnl, 0);
 
     try {
       await prisma.$transaction(async (tx) => {
-        // 포지션 상태 업데이트
-        await tx.position.update({
-          where: { id: positionId },
-          data: {
-            status: "closed",
-            pnl,
-          },
-        });
+        if (isFullClose) {
+          // 전체 청산
+          await tx.position.update({
+            where: { id: positionId },
+            data: { status: "closed", pnl },
+          });
+        } else {
+          // 부분 청산
+          await tx.position.update({
+            where: { id: positionId },
+            data: {
+              size: parseFloat((position.size - closeSize).toFixed(8)),
+              margin: parseFloat((position.margin - closingMargin).toFixed(8)),
+            },
+          });
+        }
 
-        // 청산 주문 기록
         await tx.order.create({
           data: {
             userId,
             positionId,
             side: position.side,
             type: "market",
-            size: position.size,
+            size: closeSize,
             leverage: position.leverage,
-            margin: position.margin,
+            margin: closingMargin,
             status: "filled",
             price: currentPrice,
           },
         });
 
-        // 지갑 정산
-        // locked 해제 + 손익 반영
         await tx.wallet.update({
           where: { userId },
           data: {
-            // 반환금액이 0보다 작으면 (손실이 증거금보다 크면) 0으로 처리
-            balance: { increment: Math.max(returnAmount, 0) },
-            locked: { decrement: position.margin },
+            balance: { increment: returnAmount },
+            locked: { decrement: closingMargin },
           },
         });
       });
 
+      sendToUser(userId, { type: "filled", message: "청산 완료!" });
+
       res.json({
-        message: "포지션 청산 완료!",
+        message: isFullClose ? "전체 청산 완료!" : "부분 청산 완료!",
         pnl: pnl.toFixed(2),
-        returnAmount: Math.max(returnAmount, 0).toFixed(2),
-        currentPrice,
+        returnAmount: returnAmount.toFixed(2),
       });
     } catch (err) {
       console.error("청산 오류:", err);
@@ -452,7 +459,7 @@ router.post(
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
-    const positionId = parseInt(req.params.id);
+    const positionId = parseInt(req.params.id as string);
     const { amount } = req.body;
 
     if (!amount || amount <= 0) {
@@ -525,7 +532,7 @@ router.post(
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
-    const positionId = parseInt(req.params.id);
+    const positionId = parseInt(req.params.id as string);
     const { leverage } = req.body;
 
     if (!leverage || leverage <= 0) {

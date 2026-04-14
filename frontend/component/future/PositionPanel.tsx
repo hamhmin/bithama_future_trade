@@ -116,7 +116,12 @@ export default function PositionPanel() {
     try {
       const res = await fetch(
         `http://localhost:4000/api/future/position/${positionId}/close`,
-        { method: "POST", credentials: "include" },
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          // body 없으면 전체 청산 (size = position.size)
+        },
       );
       const data = await res.json();
       alert(data.message);
