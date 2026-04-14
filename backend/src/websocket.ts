@@ -233,30 +233,7 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   const ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
   let latestTrade: TradeData | null = null;
   let lastSentTrade: TradeData | null = null;
-  // 프론트 소켓 연결 시 userId 등록
-  wss.on("connection", (clientWs) => {
-    clientWs.on("message", (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-
-        // 프론트에서 auth 메시지 보내면 Map에 등록
-        if (msg.type === "auth" && msg.userId) {
-          userSocketMap.set(msg.userId, clientWs);
-          console.log(`유저 ${msg.userId} 소켓 등록됐어요!`);
-        }
-      } catch {}
-    });
-
-    // 연결 끊기면 Map에서 제거
-    clientWs.on("close", () => {
-      userSocketMap.forEach((ws, userId) => {
-        if (ws === clientWs) {
-          userSocketMap.delete(userId);
-          console.log(`유저 ${userId} 소켓 제거됐어요!`);
-        }
-      });
-    });
-  });
+  
 
   ws.on("open", () => {
     console.log("바이낸스 체결가 WebSocket 연결됐어요!");

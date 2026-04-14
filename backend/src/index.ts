@@ -9,6 +9,7 @@ import { startCandleSync } from "./candle.js";
 import candleRouter from "./routes/candle.js";
 import futureRouter from "./routes/future.js";
 import cookieParser from "cookie-parser";
+import { userSocketMap } from "./websocket.js";
 
 dotenv.config();
 
@@ -40,10 +41,32 @@ app.use("/api/future", futureRouter);
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-wss.on("connection", () => {
+// 프론트 소켓 연결 시 userId 등록
+wss.on("connection", (clientWs) => {
   console.log("프론트 WebSocket 연결됐어요!");
-});
 
+  clientWs.on("message", (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+
+      // 프론트에서 auth 메시지 보내면 Map에 등록
+      if (msg.type === "auth" && msg.userId) {
+        userSocketMap.set(msg.userId, clientWs);
+        console.log(`유저 ${msg.userId} 소켓 등록됐어요!`);
+      }
+    } catch {}
+  });
+
+  // 연결 끊기면 Map에서 제거
+  clientWs.on("close", () => {
+    userSocketMap.forEach((ws, userId) => {
+      if (ws === clientWs) {
+        userSocketMap.delete(userId);
+        console.log(`유저 ${userId} 소켓 제거됐어요!`);
+      }
+    });
+  });
+});
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   connectBinanceQuote(wss);
