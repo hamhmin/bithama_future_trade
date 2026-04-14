@@ -245,6 +245,8 @@ export default function OrderPanel() {
         message={message}
         loading={loading}
         authStatus={authStatus}
+        executionPrice={executionPrice}
+        leverage={leverage}
         onPriceChange={setPrice}
         onSizeChange={setSize}
         onSubmit={handleSubmit}

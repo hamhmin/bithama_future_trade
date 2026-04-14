@@ -13,6 +13,8 @@ export default function OrderForm({
   margin,
   previewLiqPrice,
   wallet,
+  executionPrice,
+  leverage,
   message,
   loading,
   authStatus,
@@ -29,6 +31,8 @@ export default function OrderForm({
   margin: number;
   previewLiqPrice: number;
   wallet: { balance: number; locked: number } | null;
+  executionPrice: number;
+  leverage: number;
   message: string;
   loading: boolean;
   authStatus: AuthStatus;
@@ -63,6 +67,24 @@ export default function OrderForm({
           placeholder="0.000"
           className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
         />
+      </div>
+
+      {/* 25/50/75/100% 프리셋 */}
+      <div className="flex gap-1">
+        {[25, 50, 75, 100].map((percent) => (
+          <button
+            key={percent}
+            onClick={() => {
+              if (!wallet || !executionPrice) return;
+              const maxSize = (wallet.balance * leverage) / executionPrice;
+              const newSize = (maxSize * percent) / 100;
+              onSizeChange(newSize.toFixed(4));
+            }}
+            className="flex-1 py-1 rounded text-xs text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700 transition-colors"
+          >
+            {percent}%
+          </button>
+        ))}
       </div>
 
       {/* 가용 잔고 + 증거금 + 예상 청산가 */}
