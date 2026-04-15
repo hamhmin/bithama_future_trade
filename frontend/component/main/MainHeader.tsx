@@ -37,6 +37,7 @@ export default function MainHeader() {
     });
     setIsLoggedIn(false);
     router.refresh();
+    router.push("/");
   };
 
   return (
