@@ -261,6 +261,7 @@ const checkLimitOrders = async (currentPrice: number) => {
               margin: newMargin,
               entryPrice: newEntryPrice,
               liquidationPrice: newLiquidationPrice,
+              leverage: order.leverage,
             },
           });
 

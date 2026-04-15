@@ -23,6 +23,8 @@ export default function OrderPanel() {
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
   const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
+  const setShouldRefresh = useFutureStore((state) => state.setShouldRefresh);
+
   const selectedPrice = useFutureStore((state) => state.selectedPrice);
   const setSelectedPrice = useFutureStore((state) => state.setSelectedPrice);
 
@@ -89,6 +91,11 @@ export default function OrderPanel() {
         const existing = positions.find((p: any) => p.side === side);
         setOpenPosition(existing ?? null);
         setMarginTypeLocked(positions.length > 0 || orders.length > 0);
+
+        // 포지션 있으면 현재 레버리지로 동기화
+        if (existing) {
+          setLeverage(existing.leverage);
+        }
       }
 
       if (meRes.ok) {
@@ -185,6 +192,7 @@ export default function OrderPanel() {
       if (!res.ok) {
         toast.error(data.message ?? "주문 실패");
       } else {
+        setShouldRefresh(true); // 직접 트리거
         setMessage(data.message ?? "주문 완료!");
         setSize("");
         setPrice("");

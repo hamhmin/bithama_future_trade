@@ -199,6 +199,7 @@ router.post(
                 margin: newMargin,
                 entryPrice: newEntryPrice,
                 liquidationPrice: newLiquidationPrice,
+                leverage, // (마지막 진입 레버리지로 업데이트)
               },
             });
           } else {
