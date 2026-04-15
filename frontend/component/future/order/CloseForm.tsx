@@ -104,13 +104,28 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
         setMessage(data.message);
       } else {
         toast.success(data.message);
-
-        setMessage(data.message);
         setSize("");
         setPrice("");
         setSelectedPercent(null);
         onSuccess();
-        fetchPositions();
+
+        // 포지션 재fetch 후 selectedPos 업데이트
+        const posRes = await fetch(
+          "http://localhost:4000/api/future/positions",
+          {
+            credentials: "include",
+          },
+        );
+        if (posRes.ok) {
+          const positions = await posRes.json();
+          const updated = positions.find((p: any) => p.id === selectedPos?.id);
+          if (updated) {
+            setSelectedPos(updated); // 남은 수량으로 업데이트
+          } else {
+            setSelectedPos(positions[0] ?? null); // 전체 청산됐으면 다른 포지션
+          }
+          setPositions(positions);
+        }
       }
     } catch {
       setMessage("서버 오류");
