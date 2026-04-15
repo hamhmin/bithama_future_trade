@@ -38,6 +38,7 @@ export default function TradingChart() {
   const candleSeriesRef = useRef<any>(null);
   const currentCandleRef = useRef<any>(null);
   const priceLineRefs = useRef<any[]>([]);
+  const authStatus = useFutureStore((state) => state.authStatus);
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -61,11 +62,15 @@ export default function TradingChart() {
   };
 
   useEffect(() => {
+    if (authStatus !== "logged-in") {
+      setPositions([]);
+      setOrders([]);
+      return;
+    }
     fetchLines();
     const interval = setInterval(fetchLines, 5000);
     return () => clearInterval(interval);
-  }, []);
-
+  }, [authStatus]);
   // 차트 초기화
   useEffect(() => {
     if (!chartContainerRef.current) return;

@@ -50,7 +50,6 @@ type AuthStatus = "loading" | "guest" | "logged-in";
 
 export default function PositionPanel() {
   const authStatus = useFutureStore((state) => state.authStatus);
-  const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
   const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
   const setShouldRefresh = useFutureStore((state) => state.setShouldRefresh);
 
@@ -60,21 +59,6 @@ export default function PositionPanel() {
   const [history, setHistory] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-
-  // 로그인 상태 체크
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch("http://localhost:4000/api/auth/me", {
-          credentials: "include",
-        });
-        setAuthStatus(res.ok ? "logged-in" : "guest");
-      } catch {
-        setAuthStatus("guest");
-      }
-    };
-    checkAuth();
-  }, []);
 
   const fetchPositions = async () => {
     try {

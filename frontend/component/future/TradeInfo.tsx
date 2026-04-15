@@ -10,17 +10,21 @@ type FundingData = {
 
 export default function TradeInfo() {
   const tradeData = useFutureStore((state) => state.tradeData);
+  const authStatus = useFutureStore((state) => state.authStatus);
   const currentPrice = tradeData ? parseFloat(tradeData.price) : 0;
   const [funding, setFunding] = useState<FundingData | null>(null);
   const [countdown, setCountdown] = useState("");
-  const [wallet, setWallet] = useState<{ balance: number; locked: number } | null>(null);
+  const [wallet, setWallet] = useState<{
+    balance: number;
+    locked: number;
+  } | null>(null);
 
   // 펀딩비 데이터 가져오기
   useEffect(() => {
     const fetchFunding = async () => {
       try {
         const res = await fetch(
-          "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT"
+          "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT",
         );
         const data = await res.json();
         setFunding({
@@ -55,7 +59,7 @@ export default function TradeInfo() {
       const seconds = Math.floor((diff % 60000) / 1000);
 
       setCountdown(
-        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
       );
     }, 1000);
 
@@ -64,6 +68,11 @@ export default function TradeInfo() {
 
   // 내 지갑 정보 가져오기
   useEffect(() => {
+    if (authStatus !== "logged-in") {
+      setWallet(null);
+      return;
+    }
+
     const fetchWallet = async () => {
       try {
         const res = await fetch("http://localhost:4000/api/auth/me", {
@@ -78,9 +87,9 @@ export default function TradeInfo() {
     };
 
     fetchWallet();
-    const interval = setInterval(fetchWallet, 5000); // 5초마다 갱신
+    const interval = setInterval(fetchWallet, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [authStatus]);
 
   const fundingRate = funding
     ? (parseFloat(funding.lastFundingRate) * 100).toFixed(4)
@@ -91,7 +100,6 @@ export default function TradeInfo() {
 
   return (
     <div className="w-full h-full flex flex-col gap-3 p-3 text-xs">
-
       {/* 내 자산 */}
       <div className="bg-gray-800 rounded-lg p-3 flex flex-col gap-2">
         <span className="text-gray-400 font-bold">내 자산</span>
