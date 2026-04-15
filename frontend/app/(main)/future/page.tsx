@@ -10,7 +10,7 @@ export default function FuturePage() {
   return (
     <div
       className="
-      h-screen bg-gray-900 text-white
+      h-screen bg-[#050d1a] text-white
       grid grid-cols-12
       grid-rows-[48px_1fr_200px]
     "
