@@ -51,6 +51,7 @@ export default function OrderPanel() {
   const [orderTab, setOrderTab] = useState<"open" | "close">("open");
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
+  const [fetchLoading, setFetchLoading] = useState(true); // 초기값 true
 
   const minLeverage =
     openPosition?.marginType === "isolated" ? openPosition.leverage : 1;
@@ -72,6 +73,8 @@ export default function OrderPanel() {
       : 0;
 
   const fetchPosition = async () => {
+    setFetchLoading(true); // 시작 시 로딩
+
     try {
       const [posRes, ordRes, meRes] = await Promise.all([
         fetch("http://localhost:4000/api/future/positions", {
@@ -102,7 +105,10 @@ export default function OrderPanel() {
         const data = await meRes.json();
         setWallet(data.wallet);
       }
-    } catch {}
+    } catch {
+    } finally {
+      setFetchLoading(false); // 완료 시 해제
+    }
   };
 
   useEffect(() => {
@@ -212,7 +218,8 @@ export default function OrderPanel() {
       <MarginLeverageBar
         marginType={marginType}
         leverage={leverage}
-        marginTypeLocked={marginTypeLocked}
+        marginTypeLocked={marginTypeLocked || fetchLoading}
+        fetchLoading={fetchLoading}
         onMarginClick={() => setShowMarginModal(true)}
         onLeverageClick={() => setShowLeverageModal(true)}
       />
