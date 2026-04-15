@@ -29,7 +29,7 @@ export default function FuturePage() {
       </div>
 
       {/* 호가창 - 2행 차지 */}
-      <div className="col-span-2 border-r border-gray-700">
+      <div className="col-span-2 border-r border-gray-700 overflow-hidden">
         <OrderBook />
       </div>
 
