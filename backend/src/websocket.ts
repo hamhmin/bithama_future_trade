@@ -325,7 +325,7 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
     latestPrice = parseFloat(trade.p); // 실시간 가격 저장
     latestTrade = {
       type: "체결가",
-      price: trade.p,
+      price: parseFloat(trade.p).toFixed(1),
       quantity: trade.q,
       time: trade.T,
     };
@@ -371,7 +371,8 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
 
 // 바이낸스 호가창 호출 ws (기존 코드 그대로)
 export const connectBinanceCall = (wss: WebSocketServer) => {
-  const ws = new WebSocket(`wss://stream.binance.com/ws/btcusdt@depth10`);
+  // const ws = new WebSocket(`wss://stream.binance.com/ws/btcusdt@depth10`);
+  const ws = new WebSocket(`wss://fstream.binance.com/ws/btcusdt@depth10`);
 
   ws.on("open", () => {
     console.log("바이낸스 호가창 WebSocket 연결됐어요!");
@@ -382,21 +383,22 @@ export const connectBinanceCall = (wss: WebSocketServer) => {
 
   ws.on("message", (data) => {
     const trade = JSON.parse(data.toString());
-
     // 데이터 변환 함수: 소수점 제한 및 키 부여
     const formatOrders = (orders: any) => {
       if (!orders) return [];
       return orders.map((order: any) => ({
-        price: parseFloat(order[0]).toFixed(2), // 가격 소수점 2자리 (예: 68402.80)
-        quantity: parseFloat(order[1]).toFixed(5), // 수량 소수점 5자리 (예: 1.17302)
+        price: parseFloat(order[0]).toFixed(1), // 가격 소수점 2자리 (예: 68402.80)
+        quantity: parseFloat(order[1]).toFixed(3), // 수량 소수점 5자리 (예: 1.17302)
       }));
     };
 
     latestTrade = {
       type: "호가창",
-      bids: formatOrders(trade.bids),
-      asks: formatOrders(trade.asks),
+      bids: formatOrders(trade.b),
+      asks: formatOrders(trade.a),
     };
+    // console.log(trade);
+    // console.log(latestTrade);
 
     const currentString = JSON.stringify(latestTrade);
 
