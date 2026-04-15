@@ -722,5 +722,56 @@ router.post(
     res.json({ message: "TP/SL 설정 완료!" });
   },
 );
+// 자산 현황
+router.get(
+  "/assets",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
 
+    const [wallet, positions] = await Promise.all([
+      prisma.wallet.findUnique({ where: { userId } }),
+      prisma.position.findMany({
+        where: { userId, status: "open" },
+      }),
+    ]);
+
+    if (!wallet) {
+      res.status(404).json({ message: "지갑을 찾을 수 없어요." });
+      return;
+    }
+
+    // 미실현 손익 계산을 위한 현재가
+    const latest = await prisma.candle.findFirst({
+      where: { symbol: "BTCUSDT", interval: "1m" },
+      orderBy: { openTime: "desc" },
+    });
+    const currentPrice = latest?.close ?? 0;
+
+    // 미실현 손익 합산
+    const unrealizedPnl = positions.reduce((sum, pos) => {
+      const pnl =
+        pos.side === "long"
+          ? (currentPrice - pos.entryPrice) * pos.size
+          : (pos.entryPrice - currentPrice) * pos.size;
+      return sum + pnl;
+    }, 0);
+
+    const totalMargin = wallet.locked;
+    const totalBalance = wallet.balance + wallet.locked;
+    const totalEquity = totalBalance + unrealizedPnl;
+
+    res.json({
+      balance: wallet.balance, // 가용 잔고
+      locked: wallet.locked, // 증거금
+      totalBalance, // 총 잔고 (balance + locked)
+      unrealizedPnl, // 미실현 손익
+      totalEquity, // 총 자산 (총잔고 + 미실현손익)
+      marginRatio:
+        totalMargin > 0 // 증거금 비율
+          ? (totalMargin / totalEquity) * 100
+          : 0,
+    });
+  },
+);
 export default router;
