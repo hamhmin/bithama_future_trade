@@ -104,5 +104,55 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
 
   res.json({ ...user, wallet });
 });
+// 닉네임 변경
+router.patch(
+  "/profile",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const { nickname } = req.body;
 
+    if (!nickname) {
+      res.status(400).json({ message: "닉네임을 입력해주세요." });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { nickname },
+    });
+
+    res.json({ message: "닉네임 변경 완료!" });
+  },
+);
+
+// 비밀번호 변경
+router.patch(
+  "/password",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ message: "유저를 찾을 수 없어요." });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      res.status(400).json({ message: "현재 비밀번호가 틀렸어요." });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    res.json({ message: "비밀번호 변경 완료!" });
+  },
+);
 export default router;
