@@ -1,6 +1,8 @@
 import prisma from "./prisma.js";
+import { sendToUser } from "./websocket.js";
 
-const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8시간
+// const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8시간
+const FUNDING_INTERVAL_MS = 10 * 1000; // 테스트용10초
 
 // 다음 펀딩 시각 계산 (00:00 / 08:00 / 16:00 UTC)
 const getNextFundingTime = (): number => {
@@ -33,6 +35,8 @@ const fetchFundingRate = async (): Promise<number> => {
 // 펀딩비 차감 실행
 const applyFunding = async () => {
   const fundingRate = await fetchFundingRate();
+  const affectedUsers = new Set<number>(); // 영향받은 유저 추적
+
   console.log(`펀딩비 적용 시작. 비율: ${fundingRate}`);
 
   // 오픈 포지션 전체 가져오기
@@ -119,10 +123,18 @@ const applyFunding = async () => {
       console.log(
         `유저 ${position.userId} 포지션 ${position.id} 펀딩비 ${isCharged ? "차감" : "지급"}: ${fundingAmount.toFixed(4)} USDT`,
       );
+      affectedUsers.add(position.userId); // 영향받은 유저 기억하기
     } catch (err) {
       console.error(`포지션 ${position.id} 펀딩비 처리 오류:`, err);
     }
   }
+  // 모든 처리 완료 후 유저별 한 번만 전송
+  affectedUsers.forEach((userId) => {
+    sendToUser(userId, {
+      type: "funding",
+      message: "펀딩비가 적용됐어요!",
+    });
+  });
 
   console.log("펀딩비 적용 완료!");
 };
@@ -138,3 +150,10 @@ export const startFundingScheduler = () => {
     setInterval(applyFunding, FUNDING_INTERVAL_MS);
   }, delay);
 };
+
+// 테스트용 바로 실행
+// export const startFundingScheduler = () => {
+//   console.log(`즉시 실행`);
+//   applyFunding(); // 즉시 실행
+//   setInterval(applyFunding, FUNDING_INTERVAL_MS);
+// };

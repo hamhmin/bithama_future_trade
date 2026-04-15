@@ -8,6 +8,7 @@ import GuestModal from "../common/GuestModal";
 import { useFutureStore } from "@/store/useFutureStore";
 import AssetsTab from "./position/AssetsTab";
 import PositionHistoryTab from "./position/PositionHistoryTab";
+import TransactionHistoryTab from "./position/TransactionHistoryTab";
 
 type Position = {
   id: number;
@@ -19,6 +20,8 @@ type Position = {
   liquidationPrice: number;
   status: string;
   createdAt: string;
+  takeProfit: number | null;
+  stopLoss: number | null;
 };
 
 type Order = {
@@ -33,7 +36,14 @@ type Order = {
   createdAt: string;
 };
 
-type Tab = "positions" | "orders" | "history" | "assets" | "positionHistory";
+type Tab =
+  | "positions"
+  | "orders"
+  | "history"
+  | "positionHistory"
+  | "transaction"
+  | "assets";
+
 type AuthStatus = "loading" | "guest" | "logged-in";
 
 export default function PositionPanel() {
@@ -157,6 +167,7 @@ export default function PositionPanel() {
     { key: "history", label: "거래내역" },
     { key: "assets", label: "자산" },
     { key: "positionHistory", label: "포지션 히스토리" },
+    { key: "transaction", label: "펀딩비 내역" },
   ];
 
   return (
@@ -227,20 +238,13 @@ export default function PositionPanel() {
             {tab === "history" && <HistoryTable history={history} />}
             {tab === "assets" && <AssetsTab />}
             {tab === "positionHistory" && <PositionHistoryTab />}
+            {tab === "transaction" && <TransactionHistoryTab />}
           </>
         )}
       </div>
 
       {/* 게스트 모달 */}
-      {showModal && (
-        <GuestModal
-          onClose={() => setShowModal(false)}
-          onLogin={() => {
-            setAuthStatus("logged-in");
-            setShowModal(false);
-          }}
-        />
-      )}
+      {showModal && <GuestModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }

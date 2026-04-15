@@ -793,4 +793,25 @@ router.get(
     res.json(positions);
   },
 );
+// 펀딩비 내역
+router.get(
+  "/funding/history",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+
+    const history = await prisma.fundingHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        position: {
+          select: { side: true, symbol: true },
+        },
+      },
+    });
+
+    res.json(history);
+  },
+);
 export default router;

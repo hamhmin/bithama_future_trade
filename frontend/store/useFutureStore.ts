@@ -78,7 +78,8 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
       if (
         data.type === "filled" ||
         data.type === "liquidated" ||
-        data.type === "ordered"
+        data.type === "ordered" ||
+        data.type === "funding"
       ) {
         set({ shouldRefresh: true });
         return;

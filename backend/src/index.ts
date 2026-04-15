@@ -10,6 +10,7 @@ import candleRouter from "./routes/candle.js";
 import futureRouter from "./routes/future.js";
 import cookieParser from "cookie-parser";
 import { userSocketMap } from "./websocket.js";
+import { startFundingScheduler } from "./funding.js";
 
 dotenv.config();
 
@@ -72,4 +73,5 @@ server.listen(PORT, () => {
   connectBinanceQuote(wss);
   connectBinanceCall(wss);
   startCandleSync();
+  startFundingScheduler();
 });
