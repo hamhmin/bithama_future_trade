@@ -23,6 +23,7 @@ type Position = {
   createdAt: string;
   takeProfit: number | null;
   stopLoss: number | null;
+  marginType: string;
 };
 
 type Order = {
