@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
+import toast from "react-hot-toast";
 
 type Position = {
   id: number;
@@ -61,8 +62,12 @@ function AddMarginModal({
       );
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.message);
+
         setMessage(data.message);
       } else {
+        toast.success("증거금 추가 완료!");
+
         onSuccess();
         onClose();
       }
@@ -185,7 +190,10 @@ function LeverageModal({
       const data = await res.json();
       if (!res.ok) {
         setMessage(data.message);
+        toast.error(data.message);
       } else {
+        toast.success("레버리지 변경 완료!");
+
         onSuccess();
         onClose();
       }
@@ -304,8 +312,11 @@ function TpSlModal({
       );
       const data = await res.json();
       if (!res.ok) {
+        toast.success("TP/SL 설정 완료!");
         setMessage(data.message);
       } else {
+        toast.error(data.message); 
+
         onSuccess();
         onClose();
       }

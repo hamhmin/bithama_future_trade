@@ -8,6 +8,7 @@ import MarginModal from "./order/MarginModal";
 import LeverageModal from "./order/LeverageModal";
 import OrderForm from "./order/OrderForm";
 import CloseForm from "./order/CloseForm";
+import toast from "react-hot-toast";
 
 type OrderType = "market" | "limit";
 type Side = "long" | "short";
@@ -173,7 +174,7 @@ export default function OrderPanel() {
 
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.message ?? "주문 실패");
+        toast.error(data.message ?? "주문 실패");
       } else {
         setMessage(data.message ?? "주문 완료!");
         setSize("");
@@ -284,6 +285,10 @@ export default function OrderPanel() {
             onSizeChange={setSize}
             onSubmit={handleSubmit}
             onLoginClick={() => setShowModal(true)}
+            takeProfit={takeProfit}
+            stopLoss={stopLoss}
+            onTakeProfitChange={setTakeProfit}
+            onStopLossChange={setStopLoss}
           />
         </>
       ) : (

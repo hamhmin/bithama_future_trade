@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import toast from "react-hot-toast";
 
 type AuthStatus = "loading" | "guest" | "logged-in";
 
@@ -75,12 +76,25 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
       // console.log(data);
 
       // 체결/청산 이벤트 수신 추가
-      if (
-        data.type === "filled" ||
-        data.type === "liquidated" ||
-        data.type === "ordered" ||
-        data.type === "funding"
-      ) {
+      if (data.type === "filled") {
+        toast.success(data.message ?? "주문 체결!");
+        set({ shouldRefresh: true });
+        return;
+      }
+      if (data.type === "liquidated") {
+        toast.error(data.message ?? "포지션이 강제청산됐어요!");
+        set({ shouldRefresh: true });
+        return;
+      }
+      if (data.type === "ordered") {
+        toast.success(data.message ?? "주문 등록!");
+        set({ shouldRefresh: true });
+        return;
+      }
+      if (data.type === "funding") {
+        toast(data.message ?? "펀딩비가 적용됐어요!", {
+          icon: "💰",
+        });
         set({ shouldRefresh: true });
         return;
       }

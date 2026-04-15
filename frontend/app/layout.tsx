@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,30 @@ export default function RootLayout({
           <br />
           <Link href={"/future"}>future</Link>
         </div>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#1f2937",
+              color: "#fff",
+              border: "1px solid #374151",
+              fontSize: "13px",
+            },
+            success: {
+              iconTheme: {
+                primary: "#22c55e",
+                secondary: "#fff",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "#ef4444",
+                secondary: "#fff",
+              },
+            },
+            duration: 3000,
+          }}
+        />
         <hr />
         {children}
       </body>

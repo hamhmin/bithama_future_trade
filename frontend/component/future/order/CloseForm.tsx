@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
+import toast from "react-hot-toast";
 
 type Position = {
   id: number;
@@ -98,8 +99,12 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
 
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.message);
+
         setMessage(data.message);
       } else {
+        toast.success(data.message);
+
         setMessage(data.message);
         setSize("");
         setPrice("");

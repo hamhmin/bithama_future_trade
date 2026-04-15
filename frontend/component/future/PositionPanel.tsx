@@ -9,6 +9,7 @@ import { useFutureStore } from "@/store/useFutureStore";
 import AssetsTab from "./position/AssetsTab";
 import PositionHistoryTab from "./position/PositionHistoryTab";
 import TransactionHistoryTab from "./position/TransactionHistoryTab";
+import toast from "react-hot-toast";
 
 type Position = {
   id: number;
@@ -137,8 +138,12 @@ export default function PositionPanel() {
         },
       );
       const data = await res.json();
-      alert(data.message);
-      fetchPositions();
+      if (res.ok) {
+        toast.success(data.message);
+        fetchPositions();
+      } else {
+        toast.error(data.message);
+      }
     } catch {
       alert("청산 실패");
     } finally {
@@ -154,7 +159,12 @@ export default function PositionPanel() {
         { method: "DELETE", credentials: "include" },
       );
       const data = await res.json();
-      alert(data.message);
+      if (res.ok) {
+        toast.success(data.message);
+        fetchOrders();
+      } else {
+        toast.error(data.message);
+      }
       fetchOrders();
     } catch {
       alert("취소 실패");
