@@ -160,7 +160,7 @@ export default function OrderBook() {
                 className={`text-lg font-bold transition-colors duration-300 ${priceTypeColor}`}
                 onClick={() => setSelectedPrice(price)}
               >
-                {price.toFixed(1)}
+                {price.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
               </span>
               <span className="text-[10px] text-gray-500">
                 ≈ ${(price * 1).toLocaleString()}
