@@ -191,9 +191,43 @@ const checkLimitOrders = async (currentPrice: number) => {
 
     for (const order of orders) {
       await prisma.$transaction(async (tx) => {
+        const actualMargin = (currentPrice * order.size) / order.leverage;
+        const marginDiff = actualMargin - order.margin;
+        // taker 체결 시 추가 증거금 필요하면 잔고 체크
+        if (marginDiff > 0) {
+          const wallet = await tx.wallet.findUnique({
+            where: { userId: order.userId },
+          });
+
+          if (!wallet || wallet.balance < marginDiff) {
+            // 잔고 부족 → 주문 취소 + 기존 증거금 환불
+            await tx.order.update({
+              where: { id: order.id },
+              data: { status: "cancelled" },
+            });
+            await tx.wallet.update({
+              where: { userId: order.userId },
+              data: {
+                balance: { increment: order.margin },
+                locked: { decrement: order.margin },
+              },
+            });
+            return;
+          }
+
+          // 추가 증거금 차감
+          await tx.wallet.update({
+            where: { userId: order.userId },
+            data: {
+              balance: { decrement: marginDiff },
+              locked: { increment: marginDiff },
+            },
+          });
+        }
+
         const liquidationPrice = calcLiquidationPrice(
           order.side,
-          order.price!,
+          currentPrice,
           order.leverage,
         );
 
@@ -210,9 +244,9 @@ const checkLimitOrders = async (currentPrice: number) => {
         if (existing) {
           // 기존 포지션 합산
           const newSize = existing.size + order.size;
-          const newMargin = existing.margin + order.margin;
+          const newMargin = existing.margin + actualMargin;
           const newEntryPrice =
-            (existing.entryPrice * existing.size + order.price! * order.size) /
+            (existing.entryPrice * existing.size + currentPrice * order.size) /
             newSize;
           const newLiquidationPrice = calcLiquidationPrice(
             order.side,
@@ -244,9 +278,9 @@ const checkLimitOrders = async (currentPrice: number) => {
               userId: order.userId,
               side: order.side,
               size: order.size,
-              entryPrice: order.price!,
+              entryPrice: currentPrice,
               leverage: order.leverage,
-              margin: order.margin,
+              margin: actualMargin,
               liquidationPrice,
             },
           });
