@@ -814,4 +814,46 @@ router.get(
     res.json(history);
   },
 );
+// 거래 통계
+router.get(
+  "/stats",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+
+    const positions = await prisma.position.findMany({
+      where: {
+        userId,
+        status: { in: ["closed", "liquidated"] },
+      },
+    });
+
+    const totalTrades = positions.length;
+    const totalPnl = positions.reduce((sum, p) => sum + p.pnl, 0);
+    const winTrades = positions.filter((p) => p.pnl > 0).length;
+    const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+    const bestTrade =
+      totalTrades > 0 ? Math.max(...positions.map((p) => p.pnl)) : 0;
+
+    // 매 거래 수익률 합산
+    // 각 포지션의 수익률 = pnl / margin * 100
+    const sumOfRoe = positions.reduce((sum, p) => {
+      const roe = p.margin > 0 ? (p.pnl / p.margin) * 100 : 0;
+      return sum + roe;
+    }, 0);
+
+    // 총 누적 수익률 = 총손익 / 총투입증거금 * 100
+    const totalMargin = positions.reduce((sum, p) => sum + p.margin, 0);
+    const cumulativeRoe = totalMargin > 0 ? (totalPnl / totalMargin) * 100 : 0;
+
+    res.json({
+      totalTrades,
+      totalPnl,
+      winRate,
+      bestTrade,
+      sumOfRoe, // 매 거래 수익률 합산
+      cumulativeRoe, // 총 누적 수익률
+    });
+  },
+);
 export default router;
