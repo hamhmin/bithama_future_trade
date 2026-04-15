@@ -51,7 +51,8 @@ export default function OrderPanel() {
   const [orderTab, setOrderTab] = useState<"open" | "close">("open");
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
-  const [fetchLoading, setFetchLoading] = useState(true); // 초기값 true
+
+  const [fetchLoading, setFetchLoading] = useState(false); // fetchLoading은 로그인 상태일 때만 true로 시작
 
   const minLeverage =
     openPosition?.marginType === "isolated" ? openPosition.leverage : 1;
@@ -136,9 +137,10 @@ export default function OrderPanel() {
   // 포지션 + 잔고 가져오기
   useEffect(() => {
     if (authStatus !== "logged-in") return;
+    setFetchLoading(true);
     fetchPosition();
-    const interval = setInterval(fetchPosition, 5000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchPosition, 5000);
+    // return () => clearInterval(interval);
   }, [authStatus, side]);
 
   // shouldRefresh 감지
@@ -220,8 +222,21 @@ export default function OrderPanel() {
         leverage={leverage}
         marginTypeLocked={marginTypeLocked || fetchLoading}
         fetchLoading={fetchLoading}
-        onMarginClick={() => setShowMarginModal(true)}
-        onLeverageClick={() => setShowLeverageModal(true)}
+        isGuest={authStatus === "guest"}
+        onMarginClick={() => {
+          if (authStatus === "guest") {
+            setShowModal(true); // 게스트 모달
+            return;
+          }
+          setShowMarginModal(true);
+        }}
+        onLeverageClick={() => {
+          if (authStatus === "guest") {
+            setShowModal(true); // 게스트 모달
+            return;
+          }
+          setShowLeverageModal(true);
+        }}
       />
       <div className="flex rounded overflow-hidden border border-gray-700">
         <button
