@@ -30,6 +30,8 @@ interface FutureStore {
   setAuthStatus: (status: AuthStatus) => void;
   shouldRefresh: boolean;
   setShouldRefresh: (v: boolean) => void;
+  selectedPrice: number | null;
+  setSelectedPrice: (v: number | null) => void;
 }
 
 const dummyDepthData = {
@@ -60,6 +62,11 @@ const dummyDepthData = {
   ],
 };
 export const useFutureStore = create<FutureStore>((set, get) => ({
+  selectedPrice: null,
+  setSelectedPrice: (price) => {
+    set({ selectedPrice: price });
+  },
+
   depthData: dummyDepthData,
   tradeData: null,
   socket: null,

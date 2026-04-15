@@ -2,7 +2,6 @@
 
 import { useFutureStore } from "@/store/useFutureStore";
 import { useEffect, useState, useRef } from "react";
-
 export const getUsdtPrice = async () => {
   try {
     const response = await fetch(
@@ -51,6 +50,7 @@ export default function OrderBook() {
 
   const depthData = useFutureStore((state) => state.depthData);
   const tradeData = useFutureStore((state) => state.tradeData);
+  const setSelectedPrice = useFutureStore((state) => state.setSelectedPrice);
 
   // tradeData 업데이트 시 trades 목록에 추가
   useEffect(() => {
@@ -133,6 +133,7 @@ export default function OrderBook() {
                 <div
                   key={`ask-${i}`}
                   className="flex justify-between px-2 py-0.5 relative hover:bg-white/5 cursor-pointer transition-colors"
+                  onClick={() => setSelectedPrice(parseFloat(ask.price))}
                 >
                   <div
                     className="absolute right-0 top-0 bottom-[1px] bg-red-500/15 transition-all duration-200 ease-out"
@@ -142,7 +143,9 @@ export default function OrderBook() {
                     }}
                   />
                   <span className="text-red-400 z-10">
-                    {parseFloat(ask.price).toLocaleString()}
+                    {parseFloat(ask.price)
+                      .toFixed(1)
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                   </span>
                   <span className="z-10 font-mono">{ask.quantity}</span>
                 </div>
@@ -155,8 +158,9 @@ export default function OrderBook() {
             <div className="flex flex-col">
               <span
                 className={`text-lg font-bold transition-colors duration-300 ${priceTypeColor}`}
+                onClick={() => setSelectedPrice(price)}
               >
-                {price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {price.toFixed(1)}
               </span>
               <span className="text-[10px] text-gray-500">
                 ≈ ${(price * 1).toLocaleString()}
@@ -177,6 +181,7 @@ export default function OrderBook() {
                 <div
                   key={`bid-${i}`}
                   className="flex justify-between px-2 py-0.5 relative hover:bg-white/5 cursor-pointer transition-colors"
+                  onClick={() => setSelectedPrice(parseFloat(bid.price))}
                 >
                   <div
                     className="absolute right-0 top-0 bottom-[1px] bg-green-500/15 transition-all duration-200 ease-out"
@@ -186,7 +191,9 @@ export default function OrderBook() {
                     }}
                   />
                   <span className="text-green-400 z-10">
-                    {parseFloat(bid.price).toLocaleString()}
+                    {parseFloat(bid.price)
+                      .toFixed(1)
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                   </span>
                   <span className="z-10 font-mono">{bid.quantity}</span>
                 </div>

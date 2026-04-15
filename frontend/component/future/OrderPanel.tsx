@@ -23,6 +23,8 @@ export default function OrderPanel() {
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
   const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
+  const selectedPrice = useFutureStore((state) => state.selectedPrice);
+  const setSelectedPrice = useFutureStore((state) => state.setSelectedPrice);
 
   const [side, setSide] = useState<Side>("long");
   const [orderType, setOrderType] = useState<OrderType>("market");
@@ -95,6 +97,13 @@ export default function OrderPanel() {
       }
     } catch {}
   };
+
+  useEffect(() => {
+    if (!selectedPrice) return;
+    setOrderType("limit"); // 지정가로 자동 전환
+    setPrice(selectedPrice.toString());
+    setSelectedPrice(null); // 초기화
+  }, [selectedPrice]);
 
   // 마진타입 설정 가져오기
   useEffect(() => {
