@@ -13,11 +13,44 @@ const router = Router();
 router.post("/register", async (req: Request, res: Response) => {
   const { email, password, nickname } = req.body;
 
+  // 이메일 양식 검증
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    res.status(400).json({ message: "올바른 이메일 형식이 아니에요." });
+    return;
+  }
+
+  // 비밀번호 제한 (최소 8자, 영문+숫자 조합)
+  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[0-9]).{8,}$/;
+  if (!passwordRegex.test(password)) {
+    res.status(400).json({
+      message: "비밀번호는 8자 이상, 영문+숫자 조합이어야 해요.",
+    });
+    return;
+  }
+
+  // 닉네임 길이 제한
+  if (!nickname || nickname.length < 2 || nickname.length > 20) {
+    res.status(400).json({
+      message: "닉네임은 2자 이상 20자 이하로 입력해주세요.",
+    });
+    return;
+  }
+
   try {
-    // 이메일 중복 체크
+    // 이메일 중복 체크 (기존)
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       res.status(400).json({ message: "이미 사용중인 이메일이에요." });
+      return;
+    }
+
+    // 닉네임 중복 체크 추가
+    const existingNickname = await prisma.user.findFirst({
+      where: { nickname },
+    });
+    if (existingNickname) {
+      res.status(400).json({ message: "이미 사용중인 닉네임이에요." });
       return;
     }
 
@@ -112,8 +145,22 @@ router.patch(
     const userId = req.userId!;
     const { nickname } = req.body;
 
-    if (!nickname) {
-      res.status(400).json({ message: "닉네임을 입력해주세요." });
+    if (!nickname || nickname.length < 2 || nickname.length > 20) {
+      res.status(400).json({
+        message: "닉네임은 2자 이상 20자 이하로 입력해주세요.",
+      });
+      return;
+    }
+
+    // 닉네임 중복 체크 (본인 제외)
+    const existing = await prisma.user.findFirst({
+      where: {
+        nickname,
+        NOT: { id: userId },
+      },
+    });
+    if (existing) {
+      res.status(400).json({ message: "이미 사용중인 닉네임이에요." });
       return;
     }
 

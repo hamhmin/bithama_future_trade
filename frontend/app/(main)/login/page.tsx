@@ -35,7 +35,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(
-          isRegister ? { email, password, nickname } : { email, password }
+          isRegister ? { email, password, nickname } : { email, password },
         ),
       });
 
@@ -63,11 +63,13 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSubmit();
+  };
 
   return (
     <div className="flex flex-1 items-center justify-center bg-gray-900 min-h-screen">
       <div className="w-full max-w-sm bg-gray-800 rounded-xl p-8 flex flex-col gap-5">
-
         {/* 타이틀 */}
         <div className="text-center">
           <h1 className="text-white text-2xl font-bold">BIT HAMA</h1>
@@ -85,6 +87,7 @@ export default function LoginPage() {
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               placeholder="닉네임 입력"
+              onKeyDown={handleKeyDown}
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -97,6 +100,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="이메일 입력"
             className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
           />
@@ -109,17 +113,24 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="비밀번호 입력"
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
           />
+          {/* 회원가입 시에만 안내 표시 */}
+          {isRegister && (
+            <p className="text-gray-600 text-xs">
+              8자 이상, 영문+숫자 조합으로 입력해주세요
+            </p>
+          )}
         </div>
-
         {/* 메시지 */}
         {message && (
-          <p className={`text-xs text-center ${
-            message.includes("성공") ? "text-green-400" : "text-red-400"
-          }`}>
+          <p
+            className={`text-xs text-center ${
+              message.includes("성공") ? "text-green-400" : "text-red-400"
+            }`}
+          >
             {message}
           </p>
         )}
