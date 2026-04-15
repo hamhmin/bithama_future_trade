@@ -774,4 +774,23 @@ router.get(
     });
   },
 );
+// 포지션 히스토리 (청산된 포지션)
+router.get(
+  "/positions/history",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId!;
+
+    const positions = await prisma.position.findMany({
+      where: {
+        userId,
+        status: { in: ["closed", "liquidated"] },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    });
+
+    res.json(positions);
+  },
+);
 export default router;

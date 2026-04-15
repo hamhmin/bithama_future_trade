@@ -7,6 +7,7 @@ import HistoryTable from "./position/HistoryTable";
 import GuestModal from "../common/GuestModal";
 import { useFutureStore } from "@/store/useFutureStore";
 import AssetsTab from "./position/AssetsTab";
+import PositionHistoryTab from "./position/PositionHistoryTab";
 
 type Position = {
   id: number;
@@ -32,7 +33,7 @@ type Order = {
   createdAt: string;
 };
 
-type Tab = "positions" | "orders" | "history" | "assets";
+type Tab = "positions" | "orders" | "history" | "assets" | "positionHistory";
 type AuthStatus = "loading" | "guest" | "logged-in";
 
 export default function PositionPanel() {
@@ -155,6 +156,7 @@ export default function PositionPanel() {
     { key: "orders", label: `주문 (${orders.length})` },
     { key: "history", label: "거래내역" },
     { key: "assets", label: "자산" },
+    { key: "positionHistory", label: "포지션 히스토리" },
   ];
 
   return (
@@ -224,6 +226,7 @@ export default function PositionPanel() {
             )}
             {tab === "history" && <HistoryTable history={history} />}
             {tab === "assets" && <AssetsTab />}
+            {tab === "positionHistory" && <PositionHistoryTab />}
           </>
         )}
       </div>
