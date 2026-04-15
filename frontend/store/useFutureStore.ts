@@ -74,7 +74,12 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
   connectSocket: () => {
     // 이미 연결되어 있으면 새로 열지 않음
     const existing = get().socket;
-    if (existing && existing.readyState === WebSocket.OPEN) return;
+    if (
+      existing &&
+      (existing.readyState === WebSocket.CONNECTING ||
+        existing.readyState === WebSocket.OPEN)
+    )
+      return;
 
     const socket = new WebSocket("ws://localhost:4000");
 
@@ -116,11 +121,16 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
 
     socket.onclose = () => {
       console.log("소켓 끊김, 재연결...");
-      setTimeout(() => get().connectSocket(), 3000);
+      set({ socket: null });
+      setTimeout(() => {
+        // socket이 null일 때만 재연결 (의도적 종료 아닐 때)
+        if (get().socket !== null) return;
+        get().connectSocket();
+      }, 3000);
     };
 
     socket.onerror = (err) => {
-      console.error("소켓 오류:", err);
+      console.error("소켓 오류 상세:", JSON.stringify(err), err);
     };
 
     set({ socket });
