@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type OrderType = "market" | "limit";
 type Side = "long" | "short";
 type AuthStatus = "loading" | "guest" | "logged-in";
@@ -49,6 +51,8 @@ export default function OrderForm({
   onSubmit: () => void;
   onLoginClick: () => void;
 }) {
+  const [selectedPercent, setSelectedPercent] = useState<number | null>(null);
+
   return (
     <div className="flex flex-col gap-3">
       {/* 지정가 입력 */}
@@ -58,7 +62,10 @@ export default function OrderForm({
           <input
             type="number"
             value={price}
-            onChange={(e) => onPriceChange(e.target.value)}
+            onChange={(e) => {
+              onPriceChange(e.target.value);
+              setSelectedPercent(null);
+            }}
             placeholder={currentPrice.toFixed(2)}
             className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
           />
@@ -71,7 +78,10 @@ export default function OrderForm({
         <input
           type="number"
           value={size}
-          onChange={(e) => onSizeChange(e.target.value)}
+          onChange={(e) => {
+            onSizeChange(e.target.value);
+            setSelectedPercent(null);
+          }}
           placeholder="0.000"
           className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
         />
@@ -115,8 +125,13 @@ export default function OrderForm({
               const maxSize = (wallet.balance * leverage) / executionPrice;
               const newSize = (maxSize * percent) / 100;
               onSizeChange(newSize.toFixed(4));
+              setSelectedPercent(percent); // ← 클릭 효과
             }}
-            className="flex-1 py-1 rounded text-xs text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700 transition-colors"
+            className={`flex-1 py-1 rounded text-xs transition-colors cursor-pointer ${
+              selectedPercent === percent
+                ? "bg-blue-600 text-white" // ← 선택된 효과
+                : "text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700"
+            }`}
           >
             {percent}%
           </button>
