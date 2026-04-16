@@ -55,7 +55,7 @@ export default function LoginPage() {
       } else {
         // 닉네임 저장 (표시용)
         localStorage.setItem("nickname", data.nickname);
-        router.push("/future");
+        router.replace("/future");
       }
     } catch {
       setMessage("서버 오류");
