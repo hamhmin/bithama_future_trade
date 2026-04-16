@@ -24,7 +24,7 @@ export default function PositionHistoryTab() {
   const fetchHistory = async () => {
     try {
       const res = await fetch(
-        "http://localhost:4000/api/future/positions/history",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions/history`,
         { credentials: "include" },
       );
       if (!res.ok) return;

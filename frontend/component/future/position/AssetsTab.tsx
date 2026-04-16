@@ -18,9 +18,10 @@ export default function AssetsTab() {
 
   const fetchAssets = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/future/assets", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/assets`,
+        { credentials: "include" },
+      );
       if (!res.ok) return;
       setAssets(await res.json());
     } catch {

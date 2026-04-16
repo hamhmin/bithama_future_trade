@@ -31,9 +31,12 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
 
   const fetchPositions = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/future/positions", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
+        {
+          credentials: "include",
+        },
+      );
       if (!res.ok) return;
       const data = await res.json();
       setPositions(data);
@@ -84,7 +87,7 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
 
     try {
       const res = await fetch(
-        `http://localhost:4000/api/future/position/${selectedPos.id}/close`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${selectedPos.id}/close`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -111,7 +114,7 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
 
         // 포지션 재fetch 후 selectedPos 업데이트
         const posRes = await fetch(
-          "http://localhost:4000/api/future/positions",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
           {
             credentials: "include",
           },

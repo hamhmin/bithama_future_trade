@@ -52,7 +52,7 @@ function AddMarginModal({
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:4000/api/future/position/${position.id}/add-margin`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${position.id}/add-margin`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -179,7 +179,7 @@ function LeverageModal({
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:4000/api/future/position/${position.id}/leverage`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${position.id}/leverage`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -299,7 +299,7 @@ function TpSlModal({
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:4000/api/future/position/${position.id}/tpsl`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${position.id}/tpsl`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -315,7 +315,7 @@ function TpSlModal({
         toast.success("TP/SL 설정 완료!");
         setMessage(data.message);
       } else {
-        toast.error(data.message); 
+        toast.error(data.message);
 
         onSuccess();
         onClose();

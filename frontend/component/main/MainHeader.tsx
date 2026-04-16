@@ -13,9 +13,10 @@ export default function MainHeader() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/auth/me", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+          { credentials: "include" },
+        );
         if (res.ok) {
           const data = await res.json();
           setIsLoggedIn(true);
@@ -31,7 +32,7 @@ export default function MainHeader() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("http://localhost:4000/api/auth/logout", {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });

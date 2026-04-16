@@ -36,9 +36,12 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/auth/me", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+          {
+            credentials: "include",
+          },
+        );
         if (!res.ok) {
           router.push("/login");
           return;
@@ -53,9 +56,12 @@ export default function ProfilePage() {
 
     const fetchStats = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/future/stats", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/future/stats`,
+          {
+            credentials: "include",
+          },
+        );
         if (!res.ok) return;
         setStats(await res.json());
       } catch {}
@@ -69,12 +75,15 @@ export default function ProfilePage() {
     if (!nickname) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/api/auth/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ nickname }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ nickname }),
+        },
+      );
       const data = await res.json();
       if (res.ok) {
         toast.success("닉네임이 변경됐어요!");
@@ -93,12 +102,15 @@ export default function ProfilePage() {
     if (!currentPassword || !newPassword) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/api/auth/password", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/password`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ currentPassword, newPassword }),
+        },
+      );
       const data = await res.json();
       if (res.ok) {
         toast.success("비밀번호가 변경됐어요!");

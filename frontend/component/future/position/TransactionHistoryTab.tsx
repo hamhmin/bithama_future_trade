@@ -27,7 +27,7 @@ export default function TransactionHistoryTab() {
   const fetchHistory = async () => {
     try {
       const res = await fetch(
-        "http://localhost:4000/api/future/funding/history",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/funding/history`,
         { credentials: "include" },
       );
       if (!res.ok) return;

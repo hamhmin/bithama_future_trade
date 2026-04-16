@@ -15,7 +15,7 @@ export default function GuestModal({ onClose }: { onClose: () => void }) {
     const guestPassword = `guest_${Date.now()}`;
 
     try {
-      await fetch("http://localhost:4000/api/auth/register", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -26,12 +26,15 @@ export default function GuestModal({ onClose }: { onClose: () => void }) {
         }),
       });
 
-      const res = await fetch("http://localhost:4000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: guestEmail, password: guestPassword }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: guestEmail, password: guestPassword }),
+        },
+      );
 
       if (res.ok) {
         setAuthStatus("logged-in"); // 전역으로 한 번에 변경

@@ -78,13 +78,13 @@ export default function OrderPanel() {
 
     try {
       const [posRes, ordRes, meRes] = await Promise.all([
-        fetch("http://localhost:4000/api/future/positions", {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`, {
           credentials: "include",
         }),
-        fetch("http://localhost:4000/api/future/orders", {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/future/orders`, {
           credentials: "include",
         }),
-        fetch("http://localhost:4000/api/auth/me", {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
           credentials: "include",
         }),
       ]);
@@ -123,9 +123,12 @@ export default function OrderPanel() {
   useEffect(() => {
     const fetchSetting = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/future/setting", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/future/setting`,
+          {
+            credentials: "include",
+          },
+        );
         if (!res.ok) return;
         const data = await res.json();
         setMarginType(data.marginType);
@@ -153,7 +156,7 @@ export default function OrderPanel() {
     if (marginTypeLocked) return;
     try {
       const res = await fetch(
-        "http://localhost:4000/api/future/setting/margin-type",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/setting/margin-type`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -181,20 +184,23 @@ export default function OrderPanel() {
     setMessage("");
 
     try {
-      const res = await fetch("http://localhost:4000/api/future/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          side,
-          type: orderType,
-          price: orderType === "limit" ? parseFloat(price) : undefined,
-          size: parseFloat(size),
-          leverage,
-          takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
-          stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/order`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            side,
+            type: orderType,
+            price: orderType === "limit" ? parseFloat(price) : undefined,
+            size: parseFloat(size),
+            leverage,
+            takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+            stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+          }),
+        },
+      );
 
       const data = await res.json();
       if (!res.ok) {

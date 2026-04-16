@@ -55,9 +55,12 @@ export default function FutureHeader() {
     const fetchUser = async () => {
       if (authStatus !== "logged-in") return;
       try {
-        const res = await fetch("http://localhost:4000/api/auth/me", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+          {
+            credentials: "include",
+          },
+        );
         if (!res.ok) return;
         const data = await res.json();
         setUserInfo(data);
@@ -76,7 +79,7 @@ export default function FutureHeader() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:4000/api/auth/logout", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

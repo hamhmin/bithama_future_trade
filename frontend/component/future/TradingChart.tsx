@@ -47,10 +47,10 @@ export default function TradingChart() {
   const fetchLines = async () => {
     try {
       const [posRes, ordRes] = await Promise.all([
-        fetch("http://localhost:4000/api/future/positions", {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`, {
           credentials: "include",
         }),
-        fetch("http://localhost:4000/api/future/orders", {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/future/orders`, {
           credentials: "include",
         }),
       ]);
@@ -103,7 +103,7 @@ export default function TradingChart() {
     const loadInitialCandles = async () => {
       try {
         const res = await fetch(
-          `http://localhost:4000/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
         );
         const candles = await res.json();
 

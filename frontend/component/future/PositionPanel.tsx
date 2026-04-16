@@ -62,9 +62,12 @@ export default function PositionPanel() {
 
   const fetchPositions = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/future/positions", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
+        {
+          credentials: "include",
+        },
+      );
       setPositions(await res.json());
     } catch {
       console.error("포지션 로딩 실패");
@@ -73,9 +76,10 @@ export default function PositionPanel() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/future/orders", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/orders`,
+        { credentials: "include" },
+      );
       setOrders(await res.json());
     } catch {
       console.error("주문 로딩 실패");
@@ -84,9 +88,10 @@ export default function PositionPanel() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/future/history", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/history`,
+        { credentials: "include" },
+      );
       setHistory(await res.json());
     } catch {
       console.error("거래내역 로딩 실패");
@@ -114,7 +119,7 @@ export default function PositionPanel() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:4000/api/future/position/${positionId}/close`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${positionId}/close`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -140,7 +145,7 @@ export default function PositionPanel() {
     if (!confirm("주문을 취소할까요?")) return;
     try {
       const res = await fetch(
-        `http://localhost:4000/api/future/order/${orderId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/order/${orderId}`,
         { method: "DELETE", credentials: "include" },
       );
       const data = await res.json();
