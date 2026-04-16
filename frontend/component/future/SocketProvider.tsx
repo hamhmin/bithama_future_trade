@@ -11,15 +11,18 @@ export default function SocketProvider() {
   useEffect(() => {
     document.title = !tradeData?.price
       ? "0"
-      : `$${parseFloat(tradeData.price).toLocaleString()} | BTCUSDT with bithama`;
+      : `$${parseFloat(tradeData.price)
+          .toFixed(1)
+          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} | BTCUSDT with bithama`;
   }, [price]);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/auth/me", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+          { credentials: "include" },
+        );
         if (res.ok) {
           const data = await res.json();
           setAuthStatus("logged-in");

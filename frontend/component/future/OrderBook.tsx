@@ -225,10 +225,12 @@ export default function OrderBook() {
                   <span
                     className={trade.isBuy ? "text-green-400" : "text-red-400"}
                   >
-                    {parseFloat(trade.price).toLocaleString()}
+                    {parseFloat(trade.price)
+                      .toFixed(1)
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                   </span>
                   <span className="text-gray-300 font-mono">
-                    {parseFloat(trade.quantity).toFixed(4)}
+                    {parseFloat(trade.quantity).toFixed(3)}
                   </span>
                   <span className="text-gray-500">
                     {new Date(trade.time).toLocaleTimeString("ko-KR", {
