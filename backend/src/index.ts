@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 4000;
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // 프론트 주소
+    origin: process.env.FRONTEND_URL, // 프론트 주소
     credentials: true, // 쿠키 허용 (중요!)
   }),
 );

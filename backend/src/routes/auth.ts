@@ -102,8 +102,8 @@ router.post("/login", async (req: Request, res: Response) => {
     // httpOnly 쿠키로 토큰 전송
     res.cookie("token", token, {
       httpOnly: true, // JS에서 접근 불가 → XSS 방어
-      secure: false, // 개발환경은 false, 배포 시 true로 변경
-      sameSite: "lax", // CSRF 방어
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // lax - CSRF 방어
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
 
