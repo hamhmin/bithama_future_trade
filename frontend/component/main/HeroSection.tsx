@@ -25,7 +25,7 @@ export default function HeroSection() {
       <div className="absolute inset-0 z-0">
         {/* <Spline scene="https://prod.spline.design/iowSbsZO4Ar2i8a8/scene.splinecode" /> */}
         {/* <Spline scene="https://prod.spline.design/fsrWv3KngUZ0hQfv/scene.splinecode" /> */}
-        <Spline scene="https://prod.spline.design/fsrWv3KngUZ0hQfv/scene.splinecode" />
+        {/* <Spline scene="https://prod.spline.design/fsrWv3KngUZ0hQfv/scene.splinecode" /> */}
       </div>
 
       {/* 텍스트 */}
