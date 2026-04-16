@@ -2,8 +2,8 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    "rootDir": "./", // 또는 프로젝트 구조에 따라 "./src"
+    "outDir": "./dist", // 주석을 제거하여 빌드 결과물을 dist 폴더로 지정
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
@@ -39,6 +39,6 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   }
 }
