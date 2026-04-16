@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `candle` MODIFY `openTime` BIGINT NOT NULL;
+ALTER TABLE `Candle` MODIFY `openTime` BIGINT NOT NULL;

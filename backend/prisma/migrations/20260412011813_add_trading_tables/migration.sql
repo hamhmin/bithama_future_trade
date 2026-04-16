@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` DROP COLUMN `balance`;
+ALTER TABLE `User` DROP COLUMN `balance`;
 
 -- CreateTable
 CREATE TABLE `Wallet` (
