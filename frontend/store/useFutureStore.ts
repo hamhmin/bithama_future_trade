@@ -81,7 +81,7 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
     )
       return;
 
-    const socket = new WebSocket("ws://localhost:4000");
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!);
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
