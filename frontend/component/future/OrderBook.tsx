@@ -21,7 +21,10 @@ type Trade = {
   time: number;
   isBuy: boolean;
 };
-
+type OrderItem = {
+  price: string;
+  quantity: string;
+};
 type Tab = "orderbook" | "trades";
 
 export default function OrderBook({
@@ -41,7 +44,9 @@ export default function OrderBook({
 
   // 소켓 데이터 오기 전엔 initialDepth 사용, 오면 소켓 데이터로 전환
   const depthData =
-    depthFromSocket.bids.length > 0 ? depthFromSocket : initialDepth;
+    depthFromSocket.bids.length > 0
+      ? depthFromSocket
+      : (initialDepth ?? { type: "호가창", bids: [], asks: [] });
   const tradeData = tradeFromSocket ? tradeFromSocket : initialTrade;
 
   useEffect(() => {
@@ -88,17 +93,25 @@ export default function OrderBook({
   );
   const maxQuantity = Math.max(...allQuantities, 0.0001);
   // asks: 중앙(index 0)부터 위로 누적
-  const asksCumulative = depthData.asks.map((_, i) =>
+  const asksCumulative = depthData.asks.map((_: OrderItem, i: number) =>
     depthData.asks
       .slice(0, i + 1)
-      .reduce((sum, a) => sum + parseFloat(a.quantity), 0),
+      .reduce(
+        (sum: number, a: { price: string; quantity: string }) =>
+          sum + parseFloat(a.quantity),
+        0,
+      ),
   );
 
   // bids: 중앙(index 0)부터 아래로 누적
-  const bidsCumulative = depthData.bids.map((_, i) =>
+  const bidsCumulative = depthData.bids.map((_: OrderItem, i: number) =>
     depthData.bids
       .slice(0, i + 1)
-      .reduce((sum, b) => sum + parseFloat(b.quantity), 0),
+      .reduce(
+        (sum: number, b: { price: string; quantity: string }) =>
+          sum + parseFloat(b.quantity),
+        0,
+      ),
   );
 
   // 전체 기준 최대값
@@ -153,32 +166,34 @@ export default function OrderBook({
 
           {/* 매도 호가 */}
           <div className="flex-1 flex flex-col-reverse overflow-hidden">
-            {depthData.asks.map((ask, i) => {
-              // const ratio = (parseFloat(ask.quantity) / maxQuantity) * 100; // 각 ratio
-              const ratio = (asksCumulative[i] / maxCumulative) * 100; // 누적ratio
+            {depthData.asks.map(
+              (ask: { price: string; quantity: string }, i: number) => {
+                // const ratio = (parseFloat(ask.quantity) / maxQuantity) * 100; // 각 ratio
+                const ratio = (asksCumulative[i] / maxCumulative) * 100; // 누적ratio
 
-              return (
-                <div
-                  key={`ask-${i}`}
-                  className="flex justify-between px-2 py-0.5 relative hover:bg-white/5 cursor-pointer transition-colors"
-                  onClick={() => setSelectedPrice(parseFloat(ask.price))}
-                >
+                return (
                   <div
-                    className="absolute right-0 top-0 bottom-[1px] bg-red-500/15 transition-all duration-200 ease-out"
-                    style={{
-                      width: `${ratio}%`,
-                      minWidth: ratio > 0 ? "2px" : "0",
-                    }}
-                  />
-                  <span className="text-red-400 z-10">
-                    {parseFloat(ask.price)
-                      .toFixed(1)
-                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                  </span>
-                  <span className="z-10 font-mono">{ask.quantity}</span>
-                </div>
-              );
-            })}
+                    key={`ask-${i}`}
+                    className="flex justify-between px-2 py-0.5 relative hover:bg-white/5 cursor-pointer transition-colors"
+                    onClick={() => setSelectedPrice(parseFloat(ask.price))}
+                  >
+                    <div
+                      className="absolute right-0 top-0 bottom-[1px] bg-red-500/15 transition-all duration-200 ease-out"
+                      style={{
+                        width: `${ratio}%`,
+                        minWidth: ratio > 0 ? "2px" : "0",
+                      }}
+                    />
+                    <span className="text-red-400 z-10">
+                      {parseFloat(ask.price)
+                        .toFixed(1)
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    </span>
+                    <span className="z-10 font-mono">{ask.quantity}</span>
+                  </div>
+                );
+              },
+            )}
           </div>
 
           {/* 현재가 */}
@@ -203,32 +218,34 @@ export default function OrderBook({
 
           {/* 매수 호가 */}
           <div className="flex-1 overflow-hidden">
-            {depthData.bids.map((bid, i) => {
-              // const ratio = (parseFloat(bid.quantity) / maxQuantity) * 100; // 각 ratio
-              const ratio = (bidsCumulative[i] / maxCumulative) * 100; // 누적ratio
+            {depthData.bids.map(
+              (bid: { price: string; quantity: string }, i: number) => {
+                // const ratio = (parseFloat(bid.quantity) / maxQuantity) * 100; // 각 ratio
+                const ratio = (bidsCumulative[i] / maxCumulative) * 100; // 누적ratio
 
-              return (
-                <div
-                  key={`bid-${i}`}
-                  className="flex justify-between px-2 py-0.5 relative hover:bg-white/5 cursor-pointer transition-colors"
-                  onClick={() => setSelectedPrice(parseFloat(bid.price))}
-                >
+                return (
                   <div
-                    className="absolute right-0 top-0 bottom-[1px] bg-green-500/15 transition-all duration-200 ease-out"
-                    style={{
-                      width: `${ratio}%`,
-                      minWidth: ratio > 0 ? "2px" : "0",
-                    }}
-                  />
-                  <span className="text-green-400 z-10">
-                    {parseFloat(bid.price)
-                      .toFixed(1)
-                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                  </span>
-                  <span className="z-10 font-mono">{bid.quantity}</span>
-                </div>
-              );
-            })}
+                    key={`bid-${i}`}
+                    className="flex justify-between px-2 py-0.5 relative hover:bg-white/5 cursor-pointer transition-colors"
+                    onClick={() => setSelectedPrice(parseFloat(bid.price))}
+                  >
+                    <div
+                      className="absolute right-0 top-0 bottom-[1px] bg-green-500/15 transition-all duration-200 ease-out"
+                      style={{
+                        width: `${ratio}%`,
+                        minWidth: ratio > 0 ? "2px" : "0",
+                      }}
+                    />
+                    <span className="text-green-400 z-10">
+                      {parseFloat(bid.price)
+                        .toFixed(1)
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    </span>
+                    <span className="z-10 font-mono">{bid.quantity}</span>
+                  </div>
+                );
+              },
+            )}
           </div>
         </>
       )}

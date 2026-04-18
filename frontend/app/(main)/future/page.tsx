@@ -15,7 +15,10 @@ async function getInitialData() {
     );
     return await res.json();
   } catch {
-    return { depth: null, trade: null };
+    return {
+      depth: { type: "호가창", bids: [], asks: [] },
+      trade: null,
+    };
   }
 }
 
