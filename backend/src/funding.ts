@@ -1,8 +1,8 @@
 import prisma from "./prisma.js";
 import { sendToUser } from "./websocket.js";
 
-// const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8시간
-const FUNDING_INTERVAL_MS = 10 * 1000; // 테스트용10초
+const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8시간
+// const FUNDING_INTERVAL_MS = 10 * 1000; // 테스트용10초
 
 // 다음 펀딩 시각 계산 (00:00 / 08:00 / 16:00 UTC)
 const getNextFundingTime = (): number => {
