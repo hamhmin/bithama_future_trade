@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
+import ShareCard from "./ShareCard";
 import toast from "react-hot-toast";
 
 type Position = {
@@ -425,6 +426,7 @@ export default function PositionTable({
   const [addMarginTarget, setAddMarginTarget] = useState<Position | null>(null);
   const [leverageTarget, setLeverageTarget] = useState<Position | null>(null);
   const [tpslTarget, setTpslTarget] = useState<Position | null>(null);
+  const [shareTarget, setShareTarget] = useState<Position | null>(null);
 
   const calcPnl = (position: Position) => {
     if (!currentPrice) return 0;
@@ -563,13 +565,21 @@ export default function PositionTable({
                   {roe.toFixed(2)}%
                 </td>
                 <td className="px-3 py-2 text-center">
-                  <button
-                    onClick={() => onClose(pos.id)}
-                    disabled={loading}
-                    className="px-2 py-1 rounded text-xs bg-gray-700 hover:bg-red-600 text-white transition-colors"
-                  >
-                    청산
-                  </button>
+                  <div className="flex gap-1 justify-center">
+                    <button
+                      onClick={() => setShareTarget(pos)}
+                      className="px-2 py-1 rounded text-xs bg-gray-700 hover:bg-blue-600 text-white transition-colors"
+                    >
+                      공유
+                    </button>
+                    <button
+                      onClick={() => onClose(pos.id)}
+                      disabled={loading}
+                      className="px-2 py-1 rounded text-xs bg-gray-700 hover:bg-red-600 text-white transition-colors"
+                    >
+                      청산
+                    </button>
+                  </div>
                 </td>
               </tr>
             );
@@ -601,6 +611,13 @@ export default function PositionTable({
           position={tpslTarget}
           onClose={() => setTpslTarget(null)}
           onSuccess={onRefresh}
+        />
+      )}
+      {shareTarget && (
+        <ShareCard
+          position={shareTarget}
+          currentPrice={currentPrice}
+          onClose={() => setShareTarget(null)}
         />
       )}
     </>

@@ -24,7 +24,7 @@ async function getInitialData() {
 
 export default async function FuturePage() {
   const { depth, trade } = await getInitialData();
-  console.log(depth, trade);
+  // console.log(depth, trade);
 
   // 서버에서 store 초기값 설정
   if (depth) useFutureStore.setState({ depthData: depth });
