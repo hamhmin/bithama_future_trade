@@ -71,6 +71,9 @@ model Order {
   position   Position? @relation(fields: [positionId], references: [id])
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  fee       Float?   // 수수료 금액
+  feeType   String?  // "maker" | "taker"
+
 }
 
 model FundingHistory {

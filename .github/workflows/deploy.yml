@@ -27,6 +27,7 @@ jobs:
             # 백엔드 빌드
             cd backend
             npm install
+            npx prisma migrate deploy  # ← 추가
             npm run build
             pm2 restart bithama-backend
 
