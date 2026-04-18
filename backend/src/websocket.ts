@@ -150,6 +150,7 @@ const checkLiquidation = async (currentPrice: number) => {
             price: currentPrice,
             fee,
             feeType: "taker",
+            orderRole: "close",
           },
         });
 
@@ -288,6 +289,7 @@ const checkLimitOrders = async (currentPrice: number) => {
               positionId: existing.id,
               fee,
               feeType,
+              orderRole: "open",
             },
           });
         } else {
@@ -311,6 +313,7 @@ const checkLimitOrders = async (currentPrice: number) => {
               positionId: position.id,
               fee,
               feeType,
+              orderRole: "open",
             },
           });
         }

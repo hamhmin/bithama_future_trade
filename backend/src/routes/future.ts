@@ -238,6 +238,7 @@ router.post(
               price: executionPrice,
               fee,
               feeType: "taker",
+              orderRole: "open",
             },
           });
 
@@ -280,6 +281,7 @@ router.post(
               marginType, // 저장
               status: "open",
               feeType: isTaker ? "taker" : "maker", // 수수료 타입
+              orderRole: "open",
             },
           });
 
@@ -461,6 +463,7 @@ router.post(
             price: currentPrice,
             fee,
             feeType: "taker",
+            orderRole: "close",
           },
         });
 
@@ -815,20 +818,26 @@ router.get(
       include: {
         orders: {
           where: { status: "filled" },
-          select: { price: true, size: true, fee: true },
+          select: { price: true, size: true, fee: true, orderRole: true },
         },
       },
     });
 
     // 종료 평균가 + 총 수수료 계산
     const result = positions.map((pos) => {
-      const closeOrders = pos.orders.filter((o) => o.price && o.size);
-      const totalSize = closeOrders.reduce((sum, o) => sum + o.size, 0);
+      // orderRole이 "close"인 주문만 종료 주문으로 판별
+      const closeOrders = pos.orders.filter(
+        (o) => o.price && o.size && o.orderRole === "close",
+      );
+      const openOrders = pos.orders.filter((o) => o.orderRole === "open");
+
+      const totalCloseSize = closeOrders.reduce((sum, o) => sum + o.size, 0);
       const avgClosePrice =
-        totalSize > 0
+        totalCloseSize > 0
           ? closeOrders.reduce((sum, o) => sum + o.price! * o.size, 0) /
-            totalSize
+            totalCloseSize
           : null;
+
       const totalFee = pos.orders.reduce((sum, o) => sum + (o.fee ?? 0), 0);
 
       return { ...pos, avgClosePrice, totalFee };

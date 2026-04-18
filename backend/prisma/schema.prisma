@@ -73,6 +73,8 @@ model Order {
   updatedAt  DateTime  @updatedAt
   fee       Float?   // 수수료 금액
   feeType   String?  // "maker" | "taker"
+  orderRole  String?  // "open" | "close"
+
 
 }
 
