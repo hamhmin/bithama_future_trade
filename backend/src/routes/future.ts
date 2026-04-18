@@ -11,6 +11,8 @@ const router = Router();
 // 유지마진율 0.5%
 const MAINTENANCE_MARGIN_RATE = 0.005;
 
+const MAKER_FEE_RATE = 0.0002;
+const TAKER_FEE_RATE = 0.0005;
 // Isolated 청산가
 const calcIsolatedLiqPrice = (
   side: string,
@@ -219,6 +221,10 @@ router.post(
             });
           }
 
+          const fee = parseFloat(
+            (executionPrice * size * TAKER_FEE_RATE).toFixed(8),
+          );
+
           const order = await tx.order.create({
             data: {
               userId,
@@ -230,7 +236,14 @@ router.post(
               margin,
               status: "filled",
               price: executionPrice,
+              fee,
+              feeType: "taker",
             },
+          });
+
+          await tx.wallet.update({
+            where: { userId },
+            data: { balance: { decrement: fee } },
           });
 
           return { position, order };
@@ -406,7 +419,10 @@ router.post(
         ? (currentPrice - position.entryPrice) * closeSize
         : (position.entryPrice - currentPrice) * closeSize;
 
-    const returnAmount = Math.max(closingMargin + pnl, 0);
+    const fee = parseFloat(
+      (currentPrice * closeSize * TAKER_FEE_RATE).toFixed(8),
+    );
+    const returnAmount = Math.max(closingMargin + pnl - fee, 0);
 
     try {
       await prisma.$transaction(async (tx) => {
@@ -438,6 +454,8 @@ router.post(
             margin: closingMargin,
             status: "filled",
             price: currentPrice,
+            fee,
+            feeType: "taker",
           },
         });
 

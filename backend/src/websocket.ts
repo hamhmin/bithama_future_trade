@@ -21,6 +21,10 @@ export const userSocketMap = new Map<number, WebSocket>();
 
 // 청산가 계산
 const MAINTENANCE_MARGIN_RATE = 0.005;
+
+const MAKER_FEE_RATE = 0.0002;
+const TAKER_FEE_RATE = 0.0005;
+
 const calcLiquidationPrice = (
   side: string,
   entryPrice: number,
@@ -111,9 +115,13 @@ const checkLiquidation = async (currentPrice: number) => {
           ? (currentPrice - position.entryPrice) * position.size
           : (position.entryPrice - currentPrice) * position.size;
 
+      const fee = parseFloat(
+        (currentPrice * position.size * TAKER_FEE_RATE).toFixed(8),
+      );
+
       const returnAmount = isLiquidation
-        ? 0 // 강제청산은 증거금 전액 손실
-        : Math.max(position.margin + pnl, 0);
+        ? 0
+        : Math.max(position.margin + pnl - fee, 0);
 
       const closeStatus = isLiquidation ? "liquidated" : "closed";
 
@@ -140,6 +148,8 @@ const checkLiquidation = async (currentPrice: number) => {
             margin: position.margin,
             status: "filled",
             price: currentPrice,
+            fee,
+            feeType: "taker",
           },
         });
 
@@ -240,6 +250,16 @@ const checkLimitOrders = async (currentPrice: number) => {
             symbol: "BTCUSDT",
           },
         });
+        // taker/maker 판별
+        const isTaker =
+          (order.side === "long" && order.price! >= currentPrice) ||
+          (order.side === "short" && order.price! <= currentPrice);
+
+        const feeRate = isTaker ? TAKER_FEE_RATE : MAKER_FEE_RATE;
+        const feeType = isTaker ? "taker" : "maker";
+        const fee = parseFloat(
+          (currentPrice * order.size * feeRate).toFixed(8),
+        );
 
         if (existing) {
           // 기존 포지션 합산
@@ -270,6 +290,8 @@ const checkLimitOrders = async (currentPrice: number) => {
             data: {
               status: "filled",
               positionId: existing.id,
+              fee,
+              feeType,
             },
           });
         } else {
@@ -291,9 +313,16 @@ const checkLimitOrders = async (currentPrice: number) => {
             data: {
               status: "filled",
               positionId: position.id,
+              fee,
+              feeType,
             },
           });
         }
+
+        await tx.wallet.update({
+          where: { userId: order.userId },
+          data: { balance: { decrement: fee } },
+        });
       });
 
       console.log(`지정가 주문 ${order.id} 체결! 현재가: ${currentPrice}`);
