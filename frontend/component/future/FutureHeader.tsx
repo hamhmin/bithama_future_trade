@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFutureStore } from "@/store/useFutureStore";
+import GuestModal from "../common/GuestModal";
 
 type TickerData = {
   lastPrice: string;
@@ -31,6 +32,10 @@ export default function FutureHeader() {
   const [prevPrice, setPrevPrice] = useState(0);
   const [priceUp, setPriceUp] = useState(true);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"select" | "login" | "register">(
+    "select",
+  );
 
   // 24시간 티커 가져오기
   useEffect(() => {
@@ -150,7 +155,6 @@ export default function FutureHeader() {
           </span>
         </div>
       </div>
-
       {/* 우측 - 유저 정보 */}
       <div className="flex items-center gap-3">
         {authStatus === "logged-in" && userInfo ? (
@@ -179,13 +183,19 @@ export default function FutureHeader() {
         ) : authStatus === "guest" ? (
           <>
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => {
+                setModalMode("login");
+                setShowModal(true);
+              }}
               className="px-3 py-1 rounded text-xs text-white bg-blue-600 hover:bg-blue-500 transition-colors"
             >
               로그인
             </button>
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => {
+                setModalMode("register");
+                setShowModal(true);
+              }}
               className="px-3 py-1 rounded text-xs text-gray-300 border border-gray-700 hover:border-gray-500 transition-colors"
             >
               회원가입
@@ -193,6 +203,13 @@ export default function FutureHeader() {
           </>
         ) : null}
       </div>
+      {/* 모달 */}
+      {showModal && (
+        <GuestModal
+          onClose={() => setShowModal(false)}
+          initialMode={modalMode}
+        />
+      )}
     </div>
   );
 }
