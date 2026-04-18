@@ -1,5 +1,6 @@
 "use client";
 
+import { useFutureStore } from "@/store/useFutureStore";
 import { useEffect, useState } from "react";
 
 type ClosedPosition = {
@@ -22,6 +23,7 @@ type ClosedPosition = {
 export default function PositionHistoryTab() {
   const [positions, setPositions] = useState<ClosedPosition[]>([]);
   const [loading, setLoading] = useState(true);
+  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
 
   const fetchHistory = async () => {
     try {
@@ -41,6 +43,11 @@ export default function PositionHistoryTab() {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  useEffect(() => {
+    if (!shouldRefresh) return;
+    fetchHistory();
+  }, [shouldRefresh]);
 
   if (loading) {
     return (
@@ -129,10 +136,16 @@ export default function PositionHistoryTab() {
                   className={`px-2 py-0.5 rounded text-xs ${
                     pos.status === "liquidated"
                       ? "bg-red-900 text-red-400"
-                      : "bg-gray-700 text-gray-400"
+                      : pos.status === "open"
+                        ? "bg-blue-900 text-blue-400"
+                        : "bg-gray-700 text-gray-400"
                   }`}
                 >
-                  {pos.status === "liquidated" ? "강제청산" : "청산"}
+                  {pos.status === "liquidated"
+                    ? "강제청산"
+                    : pos.status === "open"
+                      ? "유지중"
+                      : "청산"}
                 </span>
               </td>
               <td className="px-3 py-2 text-right text-gray-400">

@@ -811,9 +811,9 @@ router.get(
     const positions = await prisma.position.findMany({
       where: {
         userId,
-        status: { in: ["closed", "liquidated"] },
+        // status 조건 제거 → 전체 포지션
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       take: 50,
       include: {
         orders: {
@@ -823,13 +823,10 @@ router.get(
       },
     });
 
-    // 종료 평균가 + 총 수수료 계산
     const result = positions.map((pos) => {
-      // orderRole이 "close"인 주문만 종료 주문으로 판별
       const closeOrders = pos.orders.filter(
         (o) => o.price && o.size && o.orderRole === "close",
       );
-      const openOrders = pos.orders.filter((o) => o.orderRole === "open");
 
       const totalCloseSize = closeOrders.reduce((sum, o) => sum + o.size, 0);
       const avgClosePrice =
