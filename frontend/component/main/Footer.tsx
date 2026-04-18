@@ -18,6 +18,19 @@ export default function Footer() {
             <Link href="/login" className="hover:text-white transition-colors">
               로그인
             </Link>
+            <Link
+              href="/privacy"
+              className="text-gray-500 hover:text-gray-300 text-xs"
+            >
+              개인정보처리방침
+            </Link>
+            <Link
+              href="/terms"
+              className="text-gray-500 hover:text-gray-300 text-xs"
+            >
+              서비스 이용약관
+            </Link>
+
             <span>© 2025 BITHAMA. All rights reserved.</span>
           </div>
         </div>
