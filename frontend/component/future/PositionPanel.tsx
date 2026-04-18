@@ -111,6 +111,7 @@ export default function PositionPanel() {
     if (!shouldRefresh) return;
     fetchPositions();
     fetchOrders();
+    fetchHistory();
     setShouldRefresh(false);
   }, [shouldRefresh]);
 
