@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useFutureStore } from "@/store/useFutureStore";
 import GuestModal from "../common/GuestModal";
@@ -36,6 +36,7 @@ export default function FutureHeader() {
   const [modalMode, setModalMode] = useState<"select" | "login" | "register">(
     "select",
   );
+  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
 
   // 24시간 티커 가져오기
   useEffect(() => {
@@ -54,27 +55,32 @@ export default function FutureHeader() {
     const interval = setInterval(fetchTicker, 10000);
     return () => clearInterval(interval);
   }, []);
+  const fetchUser = useCallback(async () => {
+    if (authStatus !== "logged-in") return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+        {
+          credentials: "include",
+        },
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setUserInfo(data);
+    } catch {}
+  }, [authStatus]);
 
   // 유저 정보 가져오기
   useEffect(() => {
-    const fetchUser = async () => {
-      if (authStatus !== "logged-in") return;
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
-          {
-            credentials: "include",
-          },
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        setUserInfo(data);
-      } catch {}
-    };
     fetchUser();
-  }, [authStatus]);
-
+  }, [fetchUser]);
+  // shouldRefresh 감지 시 유저 정보 갱신
+  useEffect(() => {
+    if (!shouldRefresh) return;
+    fetchUser();
+  }, [shouldRefresh]);
   // 현재가 등락 방향 감지
+
   useEffect(() => {
     if (currentPrice && prevPrice) {
       setPriceUp(currentPrice >= prevPrice);
