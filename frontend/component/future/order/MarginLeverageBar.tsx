@@ -58,7 +58,7 @@ export default function MarginLeverageBar({
       {/* 잠금 안내 - 비로그인이면 표시 안 함 */}
       {marginTypeLocked && !isGuest && (
         <span className="text-yellow-400 text-xs">
-          포지션 청산 후 변경 가능
+          포지션 청산 후 변경 가능!
         </span>
       )}
     </div>
