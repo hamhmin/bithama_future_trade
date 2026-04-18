@@ -210,7 +210,7 @@ export default function TradingChart() {
         lineWidth: 1,
         lineStyle: 3, // 점선
         axisLabelVisible: true,
-        title: "청산가",
+        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 청산가`, // 수정
       });
       priceLineRefs.current.push(liqLine);
 
