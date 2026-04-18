@@ -16,9 +16,7 @@ type ShareCardProps = {
   onClose: () => void;
 };
 declare global {
-  interface Window {
-    Kakao: any;
-  }
+  interface Window {}
 }
 export default function ShareCard({
   position,
@@ -70,30 +68,6 @@ export default function ShareCard({
     );
   };
 
-  const handleKakaoShare = () => {
-    if (!window.Kakao) return;
-    window.Kakao.Share.sendDefault({
-      objectType: "feed",
-      content: {
-        title: `BITHAMA | ${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT`,
-        description: `ROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%  PnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT`,
-        imageUrl: "https://bithama.com/og-image.png",
-        link: {
-          mobileWebUrl: "https://bithama.com",
-          webUrl: "https://bithama.com",
-        },
-      },
-      buttons: [
-        {
-          title: "BITHAMA에서 거래하기",
-          link: {
-            mobileWebUrl: "https://bithama.com",
-            webUrl: "https://bithama.com",
-          },
-        },
-      ],
-    });
-  };
   return (
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
@@ -208,12 +182,7 @@ export default function ShareCard({
           >
             텔레그램
           </button>
-          <button
-            onClick={handleKakaoShare}
-            className="px-4 py-2 rounded-lg text-sm font-bold text-black bg-[#FEE500] hover:bg-[#e6cf00] transition-colors"
-          >
-            카카오
-          </button>
+
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm text-gray-400 border border-gray-700 hover:border-gray-500 transition-colors"

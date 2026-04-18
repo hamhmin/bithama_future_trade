@@ -10,7 +10,6 @@ export const metadata = {
   },
   description: "실전 모의 선물거래 플랫폼",
 };
-import KakaoInit from "@/component/KakaoInit";
 
 export default function RootLayout({
   children,
@@ -20,7 +19,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <KakaoInit />
         <div className="hidden">
           <Link href={"/"}>index</Link>
           <br />
