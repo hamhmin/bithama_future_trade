@@ -15,7 +15,11 @@ type ShareCardProps = {
   currentPrice: number;
   onClose: () => void;
 };
-
+declare global {
+  interface Window {
+    Kakao: any;
+  }
+}
 export default function ShareCard({
   position,
   currentPrice,
@@ -34,7 +38,14 @@ export default function ShareCard({
   const handleDownload = async () => {
     if (!cardRef.current) return;
     try {
-      const dataUrl = await domtoimage.toPng(cardRef.current, { scale: 2 });
+      const dataUrl = await domtoimage.toPng(cardRef.current, {
+        width: cardRef.current.offsetWidth * 2,
+        height: cardRef.current.offsetHeight * 2,
+        style: {
+          transform: "scale(2)",
+          transformOrigin: "top left",
+        },
+      });
       const link = document.createElement("a");
       link.download = `bithama-${position.side}-${Date.now()}.png`;
       link.href = dataUrl;
@@ -43,7 +54,46 @@ export default function ShareCard({
       console.error("이미지 생성 실패:", err);
     }
   };
+  const handleTwitterShare = () => {
+    const text = `${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT\nROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%\nPnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT\n\n모의 선물거래 플랫폼 bithama.com`;
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
+      "_blank",
+    );
+  };
 
+  const handleTelegramShare = () => {
+    const text = `${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT\nROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%\nPnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT\n\n모의 선물거래 플랫폼`;
+    window.open(
+      `https://t.me/share/url?url=https://bithama.com&text=${encodeURIComponent(text)}`,
+      "_blank",
+    );
+  };
+
+  const handleKakaoShare = () => {
+    if (!window.Kakao) return;
+    window.Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: `BITHAMA | ${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT`,
+        description: `ROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%  PnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT`,
+        imageUrl: "https://bithama.com/og-image.png",
+        link: {
+          mobileWebUrl: "https://bithama.com",
+          webUrl: "https://bithama.com",
+        },
+      },
+      buttons: [
+        {
+          title: "BITHAMA에서 거래하기",
+          link: {
+            mobileWebUrl: "https://bithama.com",
+            webUrl: "https://bithama.com",
+          },
+        },
+      ],
+    });
+  };
   return (
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
@@ -139,16 +189,34 @@ export default function ShareCard({
         </div>
 
         {/* 버튼 */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 flex-wrap justify-center">
           <button
             onClick={handleDownload}
-            className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
           >
             이미지 저장
           </button>
           <button
+            onClick={handleTwitterShare}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-black hover:bg-gray-900 transition-colors"
+          >
+            X 공유
+          </button>
+          <button
+            onClick={handleTelegramShare}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#229ED9] hover:bg-[#1a8bc2] transition-colors"
+          >
+            텔레그램
+          </button>
+          <button
+            onClick={handleKakaoShare}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-black bg-[#FEE500] hover:bg-[#e6cf00] transition-colors"
+          >
+            카카오
+          </button>
+          <button
             onClick={onClose}
-            className="px-6 py-2 rounded-lg text-sm text-gray-400 border border-gray-700 hover:border-gray-500 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm text-gray-400 border border-gray-700 hover:border-gray-500 transition-colors"
           >
             닫기
           </button>

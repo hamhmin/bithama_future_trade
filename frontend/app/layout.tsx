@@ -10,15 +10,7 @@ export const metadata = {
   },
   description: "실전 모의 선물거래 플랫폼",
 };
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import KakaoInit from "@/component/KakaoInit";
 
 export default function RootLayout({
   children,
@@ -28,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <KakaoInit />
         <div className="hidden">
           <Link href={"/"}>index</Link>
           <br />
