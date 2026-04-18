@@ -1,10 +1,10 @@
 -- AlterTable
-ALTER TABLE `order` ADD COLUMN `fee` DOUBLE NULL,
+ALTER TABLE `Order` ADD COLUMN `fee` DOUBLE NULL,
     ADD COLUMN `feeType` VARCHAR(191) NULL,
     ADD COLUMN `marginType` VARCHAR(191) NOT NULL DEFAULT 'isolated';
 
 -- AlterTable
-ALTER TABLE `position` ADD COLUMN `stopLoss` DOUBLE NULL,
+ALTER TABLE `Position` ADD COLUMN `stopLoss` DOUBLE NULL,
     ADD COLUMN `takeProfit` DOUBLE NULL;
 
 -- CreateTable
