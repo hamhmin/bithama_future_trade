@@ -61,8 +61,10 @@ export default function PositionPanel() {
   const [history, setHistory] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [positionLoading, setPositionLoading] = useState(true);
 
   const fetchPositions = async () => {
+    setPositionLoading(true);
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
@@ -73,6 +75,8 @@ export default function PositionPanel() {
       setPositions(await res.json());
     } catch {
       console.error("포지션 로딩 실패");
+    } finally {
+      setPositionLoading(false);
     }
   };
 
@@ -227,14 +231,19 @@ export default function PositionPanel() {
         {/* 로그인 상태 */}
         {authStatus === "logged-in" && (
           <>
-            {tab === "positions" && (
-              <PositionTable
-                positions={positions}
-                loading={loading}
-                onClose={closePosition}
-                onRefresh={fetchPositions}
-              />
-            )}
+            {tab === "positions" &&
+              (positionLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <PositionTable
+                  positions={positions}
+                  loading={positionLoading}
+                  onClose={closePosition}
+                  onRefresh={fetchPositions}
+                />
+              ))}
             {tab === "orders" && (
               <OrderTable orders={orders} onCancel={cancelOrder} />
             )}
