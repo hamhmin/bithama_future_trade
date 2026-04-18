@@ -77,7 +77,21 @@ export default function OrderBook() {
     parseFloat(d.quantity),
   );
   const maxQuantity = Math.max(...allQuantities, 0.0001);
+  // asks: index 0이 가장 낮은 가격(중앙에 가까운 쪽)
+  const asksCumulative = depthData.asks.map((_, i) =>
+    depthData.asks
+      .slice(0, i + 1)
+      .reduce((sum, a) => sum + parseFloat(a.quantity), 0),
+  );
+  const maxAsksCumulative = Math.max(...asksCumulative, 0.0001);
 
+  // bids: index 0이 가장 높은 가격(중앙에 가까운 쪽)
+  const bidsCumulative = depthData.bids.map((_, i) =>
+    depthData.bids
+      .slice(0, i + 1)
+      .reduce((sum, b) => sum + parseFloat(b.quantity), 0),
+  );
+  const maxBidsCumulative = Math.max(...bidsCumulative, 0.0001);
   const lastAsks = parseFloat(depthData.asks[0]?.price || "0");
   const firstBids = parseFloat(depthData.bids[0]?.price || "0");
 
@@ -128,7 +142,9 @@ export default function OrderBook() {
           {/* 매도 호가 */}
           <div className="flex-1 flex flex-col-reverse overflow-hidden">
             {depthData.asks.map((ask, i) => {
-              const ratio = (parseFloat(ask.quantity) / maxQuantity) * 100;
+              // const ratio = (parseFloat(ask.quantity) / maxQuantity) * 100; // 각 ratio
+              const ratio = (asksCumulative[i] / maxAsksCumulative) * 100; // 누적ratio
+
               return (
                 <div
                   key={`ask-${i}`}
@@ -176,7 +192,9 @@ export default function OrderBook() {
           {/* 매수 호가 */}
           <div className="flex-1 overflow-hidden">
             {depthData.bids.map((bid, i) => {
-              const ratio = (parseFloat(bid.quantity) / maxQuantity) * 100;
+              // const ratio = (parseFloat(bid.quantity) / maxQuantity) * 100; // 각 ratio
+              const ratio = (bidsCumulative[i] / maxBidsCumulative) * 100; // 누적ratio
+
               return (
                 <div
                   key={`bid-${i}`}
