@@ -21,11 +21,13 @@ type UserInfo = {
   };
 };
 
-export default function FutureHeader() {
+export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
   const router = useRouter();
-  const tradeData = useFutureStore((state) => state.tradeData);
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
+  const tradeFromSocket = useFutureStore((state) => state.tradeData);
+
+  const tradeData = tradeFromSocket ? tradeFromSocket : initialTrade;
 
   const currentPrice = tradeData ? parseFloat(tradeData.price) : 0;
   const [ticker, setTicker] = useState<TickerData | null>(null);

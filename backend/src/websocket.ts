@@ -2,6 +2,8 @@ import WebSocket, { WebSocketServer } from "ws";
 import prisma from "./prisma.js";
 
 export let latestPrice: number = 0;
+export let latestDepth: any = null; // 호가창
+export let latestTradeData: any = null; // 체결가
 
 interface TradeData {
   type: string;
@@ -358,8 +360,8 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
       quantity: trade.q,
       time: trade.T,
     };
+    latestTradeData = latestTrade;
   });
-
   ws.on("close", () => {
     console.log("연결 끊겼어요. 재연결 시도...");
     setTimeout(() => connectBinanceQuote(wss), 3000);
@@ -426,6 +428,7 @@ export const connectBinanceCall = (wss: WebSocketServer) => {
       bids: formatOrders(trade.b),
       asks: formatOrders(trade.a),
     };
+    latestDepth = latestTrade;
     // console.log(trade);
     // console.log(latestTrade);
 

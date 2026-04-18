@@ -32,6 +32,8 @@ interface FutureStore {
   setShouldRefresh: (v: boolean) => void;
   selectedPrice: number | null;
   setSelectedPrice: (v: number | null) => void;
+  // setTradeData: (v: TradeData) => void;
+  // setDepthData: (v: DepthData) => void;
 }
 
 const dummyDepthData = {
@@ -61,17 +63,22 @@ const dummyDepthData = {
     { price: "68411.60", quantity: "0.00008" },
   ],
 };
+const emptyDepthData = {
+  type: "호가창",
+  bids: [],
+  asks: [],
+};
 export const useFutureStore = create<FutureStore>((set, get) => ({
   selectedPrice: null,
   setSelectedPrice: (price) => {
     set({ selectedPrice: price });
   },
 
-  depthData: dummyDepthData,
+  depthData: emptyDepthData,
   tradeData: null,
   socket: null,
   // setTradeData: (data) => set({ tradeData: data }),
-  connectSocket: () => {
+  connectSocket: async () => {
     // 이미 연결되어 있으면 새로 열지 않음
     const existing = get().socket;
     if (
@@ -144,4 +151,6 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
   setAuthStatus: (status) => set({ authStatus: status }),
   shouldRefresh: false,
   setShouldRefresh: (v: boolean) => set({ shouldRefresh: v }),
+  // setDepthData: (data: DepthData) => set({ depthData: data }),
+  // setTradeData: (data: TradeData) => set({ tradeData: data }),
 }));

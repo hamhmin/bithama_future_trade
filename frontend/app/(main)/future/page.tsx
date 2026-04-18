@@ -5,8 +5,27 @@ import OrderBook from "@/component/future/OrderBook";
 import OrderPanel from "@/component/future/OrderPanel";
 import TradingChart from "@/component/future/TradingChart";
 import SocketProvider from "@/component/future/SocketProvider";
+import { useFutureStore } from "@/store/useFutureStore";
 
-export default function FuturePage() {
+async function getInitialData() {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/future/initial-data`,
+      { cache: "no-store" },
+    );
+    return await res.json();
+  } catch {
+    return { depth: null, trade: null };
+  }
+}
+
+export default async function FuturePage() {
+  const { depth, trade } = await getInitialData();
+  console.log(depth, trade);
+
+  // 서버에서 store 초기값 설정
+  if (depth) useFutureStore.setState({ depthData: depth });
+  if (trade) useFutureStore.setState({ tradeData: trade });
   return (
     <div
       className="
@@ -20,7 +39,7 @@ export default function FuturePage() {
 
       {/* 헤더 */}
       <div className="col-span-12 border-b border-gray-700">
-        <FutureHeader />
+        <FutureHeader initialTrade={trade} />
       </div>
 
       {/* 차트 */}
@@ -30,7 +49,7 @@ export default function FuturePage() {
 
       {/* 호가창 - 2행 차지 */}
       <div className="col-span-2 border-r border-gray-700 overflow-hidden">
-        <OrderBook />
+        <OrderBook initialDepth={depth} initialTrade={trade} />
       </div>
 
       {/* 주문패널 */}

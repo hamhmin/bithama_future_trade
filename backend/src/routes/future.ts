@@ -5,6 +5,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { latestPrice } from "../websocket.js";
 import { sendToUser } from "../websocket.js";
+import { latestDepth, latestTradeData } from "../websocket.js";
 
 const router = Router();
 
@@ -823,7 +824,9 @@ router.get(
       },
     });
 
+    // 종료 평균가 + 총 수수료 계산
     const result = positions.map((pos) => {
+      // orderRole이 "close"인 주문만 종료 주문으로 판별
       const closeOrders = pos.orders.filter(
         (o) => o.price && o.size && o.orderRole === "close",
       );
@@ -843,6 +846,7 @@ router.get(
     res.json(result);
   },
 );
+
 // 펀딩비 내역
 router.get(
   "/funding/history",
@@ -906,4 +910,10 @@ router.get(
     });
   },
 );
+router.get("/initial-data", async (req, res) => {
+  res.json({
+    depth: latestDepth,
+    trade: latestTradeData,
+  });
+});
 export default router;

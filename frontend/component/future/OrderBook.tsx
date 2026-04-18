@@ -24,11 +24,25 @@ type Trade = {
 
 type Tab = "orderbook" | "trades";
 
-export default function OrderBook() {
+export default function OrderBook({
+  initialDepth,
+  initialTrade,
+}: {
+  initialDepth: any;
+  initialTrade: any;
+}) {
   const [usdtPrice, setUsdtPrice] = useState<number>(0);
   const [tab, setTab] = useState<Tab>("orderbook");
   const [trades, setTrades] = useState<Trade[]>([]);
   const prevPriceRef = useRef<number>(0);
+  const setSelectedPrice = useFutureStore((state) => state.setSelectedPrice);
+  const depthFromSocket = useFutureStore((state) => state.depthData);
+  const tradeFromSocket = useFutureStore((state) => state.tradeData);
+
+  // 소켓 데이터 오기 전엔 initialDepth 사용, 오면 소켓 데이터로 전환
+  const depthData =
+    depthFromSocket.bids.length > 0 ? depthFromSocket : initialDepth;
+  const tradeData = tradeFromSocket ? tradeFromSocket : initialTrade;
 
   useEffect(() => {
     const fetchPrice = async () => {
@@ -47,10 +61,6 @@ export default function OrderBook() {
     const interval = setInterval(fetchPrice, 60000);
     return () => clearInterval(interval);
   }, []);
-
-  const depthData = useFutureStore((state) => state.depthData);
-  const tradeData = useFutureStore((state) => state.tradeData);
-  const setSelectedPrice = useFutureStore((state) => state.setSelectedPrice);
 
   // tradeData 업데이트 시 trades 목록에 추가
   useEffect(() => {
