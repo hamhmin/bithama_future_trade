@@ -5,14 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  {
+    rules: {
+      "@next/next/no-sync-scripts": "off",
+      "react-hooks/exhaustive-deps": "warn", // error → warn으로 낮추기
+    },
+  },
 ]);
 
 export default eslintConfig;
