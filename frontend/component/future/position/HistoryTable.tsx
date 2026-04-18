@@ -7,6 +7,8 @@ type Order = {
   price: number;
   size: number;
   margin: number;
+  fee: number | null;
+  feeType: string | null;
   createdAt: string;
 };
 
@@ -29,6 +31,7 @@ export default function HistoryTable({ history }: { history: Order[] }) {
           <th className="px-3 py-2 text-right">체결가</th>
           <th className="px-3 py-2 text-right">수량</th>
           <th className="px-3 py-2 text-right">증거금</th>
+          <th className="px-3 py-2 text-right">수수료</th>
           <th className="px-3 py-2 text-right">일시</th>
         </tr>
       </thead>
@@ -50,6 +53,9 @@ export default function HistoryTable({ history }: { history: Order[] }) {
             </td>
             <td className="px-3 py-2 text-gray-400">
               {order.type === "limit" ? "지정가" : "시장가"}
+              {order.feeType && (
+                <span className="ml-1 text-gray-600">({order.feeType})</span>
+              )}
             </td>
             <td className="px-3 py-2 text-right text-white">
               ${order.price?.toLocaleString() ?? "-"}
@@ -59,6 +65,9 @@ export default function HistoryTable({ history }: { history: Order[] }) {
             </td>
             <td className="px-3 py-2 text-right text-white">
               ${order.margin.toFixed(2)}
+            </td>
+            <td className="px-3 py-2 text-right text-red-400">
+              {order.fee != null ? `-$${order.fee.toFixed(4)}` : "-"}
             </td>
             <td className="px-3 py-2 text-right text-gray-400">
               {new Date(order.createdAt).toLocaleString("ko-KR")}

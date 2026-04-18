@@ -263,6 +263,10 @@ router.post(
               locked: { increment: margin },
             },
           });
+          // 지정가 분기 안에서 order.create 바로 위에 추가
+          const isTaker =
+            (side === "long" && executionPrice >= latestPrice!) ||
+            (side === "short" && executionPrice <= latestPrice!);
 
           const order = await tx.order.create({
             data: {
@@ -275,6 +279,7 @@ router.post(
               margin,
               marginType, // 저장
               status: "open",
+              feeType: isTaker ? "taker" : "maker", // 수수료 타입
             },
           });
 
@@ -807,9 +812,29 @@ router.get(
       },
       orderBy: { updatedAt: "desc" },
       take: 50,
+      include: {
+        orders: {
+          where: { status: "filled" },
+          select: { price: true, size: true, fee: true },
+        },
+      },
     });
 
-    res.json(positions);
+    // 종료 평균가 + 총 수수료 계산
+    const result = positions.map((pos) => {
+      const closeOrders = pos.orders.filter((o) => o.price && o.size);
+      const totalSize = closeOrders.reduce((sum, o) => sum + o.size, 0);
+      const avgClosePrice =
+        totalSize > 0
+          ? closeOrders.reduce((sum, o) => sum + o.price! * o.size, 0) /
+            totalSize
+          : null;
+      const totalFee = pos.orders.reduce((sum, o) => sum + (o.fee ?? 0), 0);
+
+      return { ...pos, avgClosePrice, totalFee };
+    });
+
+    res.json(result);
   },
 );
 // 펀딩비 내역

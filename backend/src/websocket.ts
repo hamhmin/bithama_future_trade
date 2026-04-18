@@ -251,12 +251,8 @@ const checkLimitOrders = async (currentPrice: number) => {
           },
         });
         // taker/maker 판별
-        const isTaker =
-          (order.side === "long" && order.price! >= currentPrice) ||
-          (order.side === "short" && order.price! <= currentPrice);
-
-        const feeRate = isTaker ? TAKER_FEE_RATE : MAKER_FEE_RATE;
-        const feeType = isTaker ? "taker" : "maker";
+        const feeType = order.feeType ?? "maker";
+        const feeRate = feeType === "taker" ? TAKER_FEE_RATE : MAKER_FEE_RATE;
         const fee = parseFloat(
           (currentPrice * order.size * feeRate).toFixed(8),
         );

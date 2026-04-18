@@ -15,6 +15,8 @@ type ClosedPosition = {
   pnl: number;
   createdAt: string;
   updatedAt: string;
+  avgClosePrice: number | null; //  평균 종료가
+  totalFee: number; // 총 수수료
 };
 
 export default function PositionHistoryTab() {
@@ -66,6 +68,8 @@ export default function PositionHistoryTab() {
           <th className="px-3 py-2 text-right">진입가</th>
           <th className="px-3 py-2 text-right">증거금</th>
           <th className="px-3 py-2 text-right">실현 손익</th>
+          <th className="px-3 py-2 text-right">종료 평균가</th>
+          <th className="px-3 py-2 text-right">수수료</th>
           <th className="px-3 py-2 text-center">상태</th>
           <th className="px-3 py-2 text-right">일시</th>
         </tr>
@@ -111,6 +115,15 @@ export default function PositionHistoryTab() {
                 {isPnlPositive ? "+" : ""}
                 {pos.pnl.toFixed(2)} USDT
               </td>
+              <td className="px-3 py-2 text-right text-white">
+                {pos.avgClosePrice
+                  ? `$${pos.avgClosePrice.toLocaleString()}`
+                  : "-"}
+              </td>
+              <td className="px-3 py-2 text-right text-red-400">
+                {pos.totalFee > 0 ? `-$${pos.totalFee.toFixed(4)}` : "-"}
+              </td>
+
               <td className="px-3 py-2 text-center">
                 <span
                   className={`px-2 py-0.5 rounded text-xs ${
