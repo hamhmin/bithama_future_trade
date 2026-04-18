@@ -102,10 +102,10 @@ router.post("/login", async (req: Request, res: Response) => {
     // httpOnly 쿠키로 토큰 전송
     res.cookie("token", token, {
       httpOnly: true, // JS에서 접근 불가 → XSS 방어
-      secure: false, // IP 환경에선 false // 도메인추가시 아래 주석으로 변경.
-      sameSite: "lax", // IP 환경에선 lax // 도메인추가시 아래 주석으로 변경.
-      // secure: process.env.NODE_ENV === "production",
-      // sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // lax - CSRF 방어
+      // secure: false, // IP 환경에선 false // 도메인추가시 아래 주석으로 변경.
+      // sameSite: "lax", // IP 환경에선 lax // 도메인추가시 아래 주석으로 변경.
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // lax - CSRF 방어
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
 
