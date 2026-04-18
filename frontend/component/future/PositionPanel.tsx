@@ -36,6 +36,8 @@ type Order = {
   margin: number;
   status: string;
   createdAt: string;
+  fee: number | null;
+  feeType: string | null;
 };
 
 type Tab =
