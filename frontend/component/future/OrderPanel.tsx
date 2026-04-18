@@ -121,6 +121,18 @@ export default function OrderPanel() {
 
   // 마진타입 설정 가져오기
   useEffect(() => {
+    if (authStatus === "guest") {
+      setMarginType("isolated");
+      setLeverage(10);
+      setMarginTypeLocked(false);
+      setWallet(null);
+      setOpenPosition(null);
+      setSize("");
+      setPrice("");
+      setTakeProfit("");
+      setStopLoss("");
+      setMessage("");
+    }
     const fetchSetting = async () => {
       try {
         const res = await fetch(
