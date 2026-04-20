@@ -36,9 +36,6 @@ export const metadata = {
     index: true,
     follow: true,
   },
-  verification: {
-    naver: "5b7f1dea72120664c4326bf462842d23657c2d1f",
-  },
 };
 
 export default function RootLayout({
@@ -48,6 +45,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`h-full antialiased`}>
+      <head>
+        <meta
+          name="naver-site-verification"
+          content="5b7f1dea72120664c4326bf462842d23657c2d1f"
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <div className="hidden">
           <Link href={"/"}>index</Link>
