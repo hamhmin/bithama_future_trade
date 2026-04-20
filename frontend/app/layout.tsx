@@ -34,6 +34,7 @@ export const metadata = {
     title: "BITHAMA - 모의 선물거래 플랫폼",
     description:
       "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요.",
+    images: ["https://bithama.com/og-image.png"],
   },
   robots: {
     index: true,
