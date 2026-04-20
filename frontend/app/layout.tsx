@@ -5,10 +5,37 @@ import Link from "next/link";
 import { Toaster } from "react-hot-toast";
 export const metadata = {
   title: {
-    default: "BITHAMA",
-    template: "%s | BITHAMA", // 각 페이지 title이 앞에 붙음
+    default: "BITHAMA - 모의 선물거래 플랫폼",
+    template: "%s | BITHAMA",
   },
-  description: "실전 모의 선물거래 플랫폼",
+  description:
+    "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요. 가상 자산으로 리스크 없이 트레이딩을 경험해보세요.",
+  keywords: [
+    "모의 선물거래",
+    "가상 선물거래",
+    "비트코인 거래 연습",
+    "선물거래 시뮬레이터",
+    "BITHAMA",
+  ],
+  openGraph: {
+    title: "BITHAMA - 모의 선물거래 플랫폼",
+    description:
+      "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요.",
+    url: "https://bithama.com",
+    siteName: "BITHAMA",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BITHAMA - 모의 선물거래 플랫폼",
+    description:
+      "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
