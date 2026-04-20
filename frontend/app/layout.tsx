@@ -25,6 +25,9 @@ export const metadata = {
     siteName: "BITHAMA",
     locale: "ko_KR",
     type: "website",
+    images: [
+      { url: "https://bithama.com/og-image.png", width: 1200, height: 630 },
+    ],
   },
   twitter: {
     card: "summary_large_image",
