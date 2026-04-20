@@ -159,7 +159,7 @@ export default function OrderBook({
       {tab === "orderbook" && (
         <>
           {/* 헤더 */}
-          <div className="flex justify-between px-2 py-1 text-gray-500 border-b border-gray-800 font-medium">
+          <div className="flex justify-between px-2 py-1 text-gray-500 border-b border-gray-800 font-medium text-[10px]">
             <span>가격(USDT)</span>
             <span>수량(BTC)</span>
           </div>

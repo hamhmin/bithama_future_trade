@@ -54,10 +54,11 @@ export default function OrderForm({
   const [selectedPercent, setSelectedPercent] = useState<number | null>(null);
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* 지정가 입력 */}
+    // return 최상단
+    <div className="flex flex-col gap-2">
+      {/* 지정가 인풋 */}
       {orderType === "limit" && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           <label className="text-gray-400 text-xs">주문가 (USDT)</label>
           <input
             type="number"
@@ -67,13 +68,13 @@ export default function OrderForm({
               setSelectedPercent(null);
             }}
             placeholder={currentPrice.toFixed(2)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500"
           />
         </div>
       )}
 
-      {/* 수량 입력 */}
-      <div className="flex flex-col gap-1">
+      {/* 수량 인풋 */}
+      <div className="flex flex-col gap-0.5">
         <label className="text-gray-400 text-xs">수량 (BTC)</label>
         <input
           type="number"
@@ -83,38 +84,40 @@ export default function OrderForm({
             setSelectedPercent(null);
           }}
           placeholder="0.000"
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+          className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500"
         />
       </div>
-      {/* TP/SL 입력 */}
-      <div className="flex flex-col gap-2">
+
+      {/* TP/SL — 무조건 flex-row, 인풋 높이 줄이기 */}
+      <div className="flex flex-col gap-0.5">
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>TP / SL</span>
           <span className="text-gray-600">선택사항</span>
         </div>
-        <div className="flex gap-2">
-          <div className="flex-1 flex flex-col gap-1">
-            <label className="text-green-400 text-xs">TP 목표가</label>
+        <div className="flex gap-1.5">
+          <div className="flex-1 flex flex-col gap-0.5">
+            <label className="text-green-400 text-[10px]">TP 목표가</label>
             <input
               type="number"
               value={takeProfit}
               onChange={(e) => onTakeProfitChange(e.target.value)}
               placeholder="0.00"
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-2 text-white text-xs focus:outline-none focus:border-green-500"
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-green-500"
             />
           </div>
-          <div className="flex-1 flex flex-col gap-1">
-            <label className="text-red-400 text-xs">SL 손절가</label>
+          <div className="flex-1 flex flex-col gap-0.5">
+            <label className="text-red-400 text-[10px]">SL 손절가</label>
             <input
               type="number"
               value={stopLoss}
               onChange={(e) => onStopLossChange(e.target.value)}
               placeholder="0.00"
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-red-500"
             />
           </div>
         </div>
       </div>
+
       {/* 25/50/75/100% 프리셋 */}
       <div className="flex gap-1">
         {[25, 50, 75, 100].map((percent) => (
@@ -123,13 +126,12 @@ export default function OrderForm({
             onClick={() => {
               if (!wallet || !executionPrice) return;
               const maxSize = (wallet.balance * leverage) / executionPrice;
-              const newSize = (maxSize * percent) / 100;
-              onSizeChange(newSize.toFixed(4));
-              setSelectedPercent(percent); // ← 클릭 효과
+              onSizeChange(((maxSize * percent) / 100).toFixed(4));
+              setSelectedPercent(percent);
             }}
             className={`flex-1 py-1 rounded text-xs transition-colors cursor-pointer ${
               selectedPercent === percent
-                ? "bg-blue-600 text-white" // ← 선택된 효과
+                ? "bg-blue-600 text-white"
                 : "text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700"
             }`}
           >
@@ -138,8 +140,8 @@ export default function OrderForm({
         ))}
       </div>
 
-      {/* 가용 잔고 + 증거금 + 예상 청산가 */}
-      <div className="flex flex-col gap-1 bg-gray-800 rounded px-3 py-2 text-xs text-gray-400">
+      {/* 가용잔고/증거금/예상청산가 — 패딩 줄이기 */}
+      <div className="flex flex-col gap-0.5 bg-gray-800 rounded px-2 py-1.5 text-[10px] text-gray-400">
         <div className="flex justify-between">
           <span>가용 잔고</span>
           <span className="text-white">
@@ -163,7 +165,7 @@ export default function OrderForm({
       {/* 메시지 */}
       {message && (
         <div
-          className={`text-xs text-center py-1 rounded ${
+          className={`text-xs text-center py-0.5 rounded ${
             message.includes("완료") || message.includes("!")
               ? "text-green-400"
               : "text-red-400"
@@ -173,11 +175,11 @@ export default function OrderForm({
         </div>
       )}
 
-      {/* 주문 버튼 or 로그인 유도 */}
+      {/* 주문 버튼 */}
       {authStatus === "guest" ? (
         <button
           onClick={onLoginClick}
-          className="w-full py-3 rounded font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors"
+          className="w-full py-2.5 rounded font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors"
         >
           로그인 후 주문하기
         </button>
@@ -185,7 +187,7 @@ export default function OrderForm({
         <button
           onClick={onSubmit}
           disabled={loading || authStatus === "loading"}
-          className={`w-full py-3 rounded font-bold text-white transition-colors ${
+          className={`w-full py-2.5 rounded font-bold text-white transition-colors ${
             loading || authStatus === "loading"
               ? "bg-gray-600 cursor-not-allowed"
               : side === "long"

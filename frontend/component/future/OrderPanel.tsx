@@ -259,7 +259,7 @@ export default function OrderPanel() {
       <div className="flex rounded overflow-hidden border border-gray-700">
         <button
           onClick={() => setOrderTab("open")}
-          className={`flex-1 py-1 text-xs font-bold transition-colors ${
+          className={`flex-1 py-2 text-xs font-bold transition-colors ${
             orderTab === "open"
               ? "bg-gray-600 text-white"
               : "text-gray-400 hover:text-white"
@@ -269,7 +269,7 @@ export default function OrderPanel() {
         </button>
         <button
           onClick={() => setOrderTab("close")}
-          className={`flex-1 py-1 text-xs font-bold transition-colors ${
+          className={`flex-1 py-2 text-xs font-bold transition-colors ${
             orderTab === "close"
               ? "bg-gray-600 text-white"
               : "text-gray-400 hover:text-white"
