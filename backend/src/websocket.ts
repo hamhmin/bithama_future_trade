@@ -354,6 +354,9 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   ws.on("message", (data) => {
     const trade = JSON.parse(data.toString());
     latestPrice = parseFloat(trade.p); // 실시간 가격 저장
+    // console.log(data);
+    // console.log(latestPrice);
+    console.log(trade.p);
     latestTrade = {
       type: "체결가",
       price: parseFloat(trade.p).toFixed(1),
@@ -395,9 +398,26 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
     });
 
     // 자동 청산 + 지정가 체결 체크
-    await checkLiquidation(currentPrice);
-    await checkLimitOrders(currentPrice);
+    // await checkLiquidation(currentPrice);
+    // await checkLimitOrders(currentPrice);
   }, 100);
+
+  // 청산, 지정가체결체크를 매초마다 하면 부하가 걸려 걸리는 순간 db 먹통되서 체결가 발송되지않음. 체크가 끝나면 다시 실행하도록 수정.
+  const startLiquidationCheck = async (currentPrice: any) => {
+    try {
+      // 자동 청산 + 지정가 체결 체크
+      await checkLiquidation(currentPrice);
+      await checkLimitOrders(currentPrice);
+    } catch (err) {
+      console.error("체크 로직 에러:", err);
+    } finally {
+      // 모든 작업이 끝난 "후에" 1초 뒤에 다시 호출
+      setTimeout(() => {
+        if (latestPrice) startLiquidationCheck(latestPrice);
+      }, 1000);
+    }
+  };
+  startLiquidationCheck(latestPrice);
 };
 
 // 바이낸스 호가창 호출 ws (기존 코드 그대로)
