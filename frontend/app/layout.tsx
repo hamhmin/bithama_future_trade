@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 export const metadata = {
   title: {
     default: "BITHAMA - 모의 선물거래 플랫폼",
-    template: "%s | BITHAMA",
+    // template: "%s | BITHAMA",
   },
   description:
     "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요. 가상 자산으로 리스크 없이 트레이딩을 경험해보세요.",
