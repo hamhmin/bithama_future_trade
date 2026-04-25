@@ -352,18 +352,24 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   });
 
   ws.on("message", (data) => {
-    const trade = JSON.parse(data.toString());
-    latestPrice = parseFloat(trade.p); // 실시간 가격 저장
-    // console.log(data);
-    // console.log(latestPrice);
-    console.log(trade.p);
-    latestTrade = {
-      type: "체결가",
-      price: parseFloat(trade.p).toFixed(1),
-      quantity: trade.q,
-      time: trade.T,
-    };
-    latestTradeData = latestTrade;
+    // 1. 데이터가 오긴 오는지 원시 데이터(Raw)로 무조건 찍어보기
+    console.log("체결가 데이터 도착!!!", data.toString());
+    try {
+      const message = JSON.parse(data.toString()); // 안전하게 문자열 변환 후 파싱
+      const trade = JSON.parse(data.toString());
+      latestPrice = parseFloat(trade.p); // 실시간 가격 저장
+      // console.log(latestPrice);
+      console.log(trade.p);
+      latestTrade = {
+        type: "체결가",
+        price: parseFloat(trade.p).toFixed(1),
+        quantity: trade.q,
+        time: trade.T,
+      };
+      latestTradeData = latestTrade;
+    } catch (error) {
+      console.error("체결가 파싱 에러:", error);
+    }
   });
   ws.on("close", () => {
     console.log("연결 끊겼어요. 재연결 시도...");
