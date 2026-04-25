@@ -31,3 +31,16 @@ button {
 button:disabled {
   cursor: not-allowed;
 }
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker 140s linear infinite;
+  user-select: none;
+}

@@ -239,7 +239,7 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
                 </button>
                 <button
                   onClick={() => {
-                    setModalMode("register");
+                    // setModalMode("register");
                     setShowModal(true);
                   }}
                   className="px-2 py-0.5 rounded text-[10px] text-gray-300 border border-gray-700"
@@ -290,7 +290,7 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
       {showModal && (
         <GuestModal
           onClose={() => setShowModal(false)}
-          initialMode={modalMode}
+          // initialMode={modalMode}
         />
       )}
     </div>

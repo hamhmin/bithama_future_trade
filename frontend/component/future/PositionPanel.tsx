@@ -178,7 +178,7 @@ export default function PositionPanel() {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col text-sm relative">
+    <div className="w-full h-[340px] md:h-full flex flex-col text-sm relative ">
       {/* 탭 */}
       <div className="flex border-b border-gray-700">
         {TAB_LABELS.map(({ key, label }) => (
