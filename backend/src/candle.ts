@@ -7,7 +7,7 @@ const INTERVALS = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"];
 export const fetchAndSaveCandles = async (symbol: string, interval: string) => {
   try {
     const res = await fetch(
-      `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1500`,
+      `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1500`, // 현물 데이터
     );
     const data = await res.json();
 

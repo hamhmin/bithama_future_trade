@@ -343,7 +343,9 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   // 기존 현물(Spot): wss://stream.binance.com/ws/btcusdt@trade
   // trade->aggTrade : 같은시간 같은 가격 거래 한번에 묶어서 보내줌
   // 변경 선물(USD-M Futures):
-  const ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
+  // const ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade"); // 선물체결데이터
+  const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade"); // 현물체결데이터
+
   let latestTrade: TradeData | null = null;
   let lastSentTrade: TradeData | null = null;
 
@@ -353,13 +355,14 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
 
   ws.on("message", (data) => {
     // 1. 데이터가 오긴 오는지 원시 데이터(Raw)로 무조건 찍어보기
-    console.log("체결가 데이터 도착!!!", data.toString());
+    // console.log("체결가 오냐");
+    // console.log("체결가 데이터 도착!!!", data.toString());
     try {
       const message = JSON.parse(data.toString()); // 안전하게 문자열 변환 후 파싱
       const trade = JSON.parse(data.toString());
       latestPrice = parseFloat(trade.p); // 실시간 가격 저장
       // console.log(latestPrice);
-      console.log(trade.p);
+      // console.log(trade.p);
       latestTrade = {
         type: "체결가",
         price: parseFloat(trade.p).toFixed(1),
@@ -428,8 +431,8 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
 
 // 바이낸스 호가창 호출 ws (기존 코드 그대로)
 export const connectBinanceCall = (wss: WebSocketServer) => {
-  // const ws = new WebSocket(`wss://stream.binance.com/ws/btcusdt@depth10`);
-  const ws = new WebSocket(`wss://fstream.binance.com/ws/btcusdt@depth10`);
+  const ws = new WebSocket(`wss://stream.binance.com/ws/btcusdt@depth10`);
+  // const ws = new WebSocket(`wss://fstream.binance.com/ws/btcusdt@depth10`);
 
   ws.on("open", () => {
     console.log("바이낸스 호가창 WebSocket 연결됐어요!");
@@ -439,20 +442,42 @@ export const connectBinanceCall = (wss: WebSocketServer) => {
   let lastSentString: string = "";
 
   ws.on("message", (data) => {
+    // const trade = JSON.parse(data.toString());
+    // // console.log(trade);
+    // // 데이터 변환 함수: 소수점 제한 및 키 부여
+    // const formatOrders = (orders: any) => {
+    //   if (!orders) return [];
+    //   return orders.map((order: any) => ({
+    //     price: parseFloat(order[0]).toFixed(1), // 가격 소수점 2자리 (예: 68402.80)
+    //     quantity: parseFloat(order[1]).toFixed(3), // 수량 소수점 5자리 (예: 1.17302)
+    //   }));
+    // };
+
+    // latestTrade = {
+    //   type: "호가창",
+    //   bids: formatOrders(trade.b),
+    //   asks: formatOrders(trade.a),
+    // };
+
+    //
     const trade = JSON.parse(data.toString());
+    // console.log(trade);
+
     // 데이터 변환 함수: 소수점 제한 및 키 부여
     const formatOrders = (orders: any) => {
       if (!orders) return [];
       return orders.map((order: any) => ({
-        price: parseFloat(order[0]).toFixed(1), // 가격 소수점 2자리 (예: 68402.80)
-        quantity: parseFloat(order[1]).toFixed(3), // 수량 소수점 5자리 (예: 1.17302)
+        // order[0]은 가격, order[1]은 수량입니다.
+        price: parseFloat(order[0]).toFixed(2),
+        quantity: (parseFloat(order[1]) * 100).toFixed(3),
       }));
     };
 
+    // 새로운 데이터 형식에 맞춰 trade.bids와 trade.asks를 참조합니다.
     latestTrade = {
       type: "호가창",
-      bids: formatOrders(trade.b),
-      asks: formatOrders(trade.a),
+      bids: formatOrders(trade.bids), // 기존 trade.b -> trade.bids로 변경
+      asks: formatOrders(trade.asks), // 기존 trade.a -> trade.asks로 변경
     };
     latestDepth = latestTrade;
     // console.log(trade);
