@@ -52,6 +52,15 @@ export default function OrderForm({
   onLoginClick: () => void;
 }) {
   const [selectedPercent, setSelectedPercent] = useState<number | null>(null);
+  const TAKER_FEE_RATE = 0.0005;
+  const fee =
+    executionPrice && parseFloat(size)
+      ? executionPrice * parseFloat(size) * TAKER_FEE_RATE
+      : 0;
+  const totalRequired = margin + fee;
+  const isInsufficient = wallet
+    ? wallet.balance < totalRequired && parseFloat(size) > 0
+    : false;
 
   return (
     // return 최상단
@@ -125,7 +134,16 @@ export default function OrderForm({
             key={percent}
             onClick={() => {
               if (!wallet || !executionPrice) return;
-              const maxSize = (wallet.balance * leverage) / executionPrice;
+              const TAKER_FEE_RATE = 0.0005;
+
+              // 수수료 포함 최대 수량 계산
+              // margin + fee = balance
+              // (price * size / leverage) + (price * size * feeRate) = balance
+              // price * size * (1/leverage + feeRate) = balance
+              const maxSize =
+                wallet.balance /
+                (executionPrice * (1 / leverage + TAKER_FEE_RATE));
+
               onSizeChange(((maxSize * percent) / 100).toFixed(4));
               setSelectedPercent(percent);
             }}
@@ -186,16 +204,24 @@ export default function OrderForm({
       ) : (
         <button
           onClick={onSubmit}
-          disabled={loading || authStatus === "loading"}
+          disabled={loading || authStatus === "loading" || isInsufficient}
           className={`w-full py-2.5 rounded font-bold text-white transition-colors ${
-            loading || authStatus === "loading"
+            isInsufficient
               ? "bg-gray-600 cursor-not-allowed"
-              : side === "long"
-                ? "bg-green-600 hover:bg-green-500"
-                : "bg-red-600 hover:bg-red-500"
+              : loading || authStatus === "loading"
+                ? "bg-gray-600 cursor-not-allowed"
+                : side === "long"
+                  ? "bg-green-600 hover:bg-green-500"
+                  : "bg-red-600 hover:bg-red-500"
           }`}
         >
-          {loading ? "처리중..." : side === "long" ? "Long 주문" : "Short 주문"}
+          {isInsufficient
+            ? "잔고 부족"
+            : loading
+              ? "처리중..."
+              : side === "long"
+                ? "Long 주문"
+                : "Short 주문"}
         </button>
       )}
     </div>

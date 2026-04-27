@@ -118,10 +118,12 @@ router.post(
 
     // 증거금 계산
     const margin = (executionPrice * size) / leverage;
+    const fee = parseFloat((executionPrice * size * TAKER_FEE_RATE).toFixed(8));
+    const totalRequired = margin + fee;
 
     // 잔고 확인 (둘 다 증거금만큼 필요)
-    if (wallet.balance < margin) {
-      res.status(400).json({ message: "잔고가 부족해요." });
+    if (wallet.balance < totalRequired) {
+      res.status(400).json({ message: "잔고가 부족해요. (수수료 포함)" });
       return;
     }
 
