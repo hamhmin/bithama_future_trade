@@ -71,7 +71,7 @@ export default function HeroSection() {
           <div className="flex items-center gap-8 mt-12">
             {[
               { label: "초기 지급 USDT", value: "100,000" },
-              { label: "레버리지", value: "최대 125x" },
+              { label: "레버리지", value: "최대 100x" },
               { label: "실시간 데이터", value: "바이낸스" },
             ].map((stat, i) => (
               <div key={i} className="flex flex-col">

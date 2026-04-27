@@ -28,7 +28,7 @@ const features = [
   {
     icon: "📈",
     title: "레버리지 거래",
-    description: "최대 125배 레버리지. Isolated/Cross 마진 방식 모두 지원.",
+    description: "최대 100배 레버리지. Isolated/Cross 마진 방식 모두 지원.",
     gradient: "from-blue-500/20 to-blue-600/5",
     border: "border-blue-500/20",
   },
