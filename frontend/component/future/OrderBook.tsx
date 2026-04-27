@@ -59,7 +59,7 @@ export default function OrderBook({
         setUsdtPrice(data[0].trade_price);
       } catch (error) {
         console.error("USDT 로드 실패:", error);
-        return 1484;
+        setUsdtPrice(1484);
       }
     };
 
