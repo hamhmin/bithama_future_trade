@@ -365,7 +365,7 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
       // console.log(trade.p);
       latestTrade = {
         type: "체결가",
-        price: parseFloat(trade.p).toFixed(1),
+        price: parseFloat(trade.p).toFixed(2),
         // quantity: trade.q, // 선물 데이터
         quantity: `${(trade.q as number) * 100}`, // 현물데이터
         time: trade.T,

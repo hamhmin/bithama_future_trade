@@ -12,7 +12,7 @@ export default function SocketProvider() {
     document.title = !tradeData?.price
       ? "0"
       : `$${parseFloat(tradeData.price)
-          .toFixed(1)
+          .toFixed(2)
           .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} | BTCUSDT with bithama`;
   }, [price]);
 
