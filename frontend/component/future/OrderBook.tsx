@@ -11,7 +11,7 @@ export const getUsdtPrice = async () => {
     return data[0].trade_price;
   } catch (error) {
     console.error("USDT 가격 로드 실패:", error);
-    return 0;
+    return 1484;
   }
 };
 
@@ -59,6 +59,7 @@ export default function OrderBook({
         setUsdtPrice(data[0].trade_price);
       } catch (error) {
         console.error("USDT 로드 실패:", error);
+        return 1484;
       }
     };
 
@@ -186,7 +187,7 @@ export default function OrderBook({
                     />
                     <span className="text-red-400 z-10">
                       {parseFloat(ask.price)
-                        .toFixed(1)
+                        .toFixed(2)
                         .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                     </span>
                     <span className="z-10 font-mono">{ask.quantity}</span>
@@ -203,7 +204,7 @@ export default function OrderBook({
                 className={`text-lg font-bold transition-colors duration-300 ${priceTypeColor}`}
                 onClick={() => setSelectedPrice(price)}
               >
-                {price.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                {price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
               </span>
               <span className="text-[10px] text-gray-500">
                 ≈ ${(price * 1).toLocaleString()}
@@ -238,7 +239,7 @@ export default function OrderBook({
                     />
                     <span className="text-green-400 z-10">
                       {parseFloat(bid.price)
-                        .toFixed(1)
+                        .toFixed(2)
                         .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                     </span>
                     <span className="z-10 font-mono">{bid.quantity}</span>
@@ -273,7 +274,7 @@ export default function OrderBook({
                     className={trade.isBuy ? "text-green-400" : "text-red-400"}
                   >
                     {parseFloat(trade.price)
-                      .toFixed(1)
+                      .toFixed(2)
                       .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                   </span>
                   <span className="text-gray-300 font-mono">
