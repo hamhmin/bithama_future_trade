@@ -31,7 +31,7 @@ export default function Footer() {
               서비스 이용약관
             </Link>
 
-            <span>© 2025 BITHAMA. All rights reserved.</span>
+            <span>© 2026 BITHAMA. All rights reserved.</span>
           </div>
         </div>
       </div>
