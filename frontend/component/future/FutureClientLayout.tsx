@@ -22,13 +22,18 @@ export default function FutureClientLayout({
 }) {
   const [chartOpen, setChartOpen] = useState(false);
   const isDesktop = useIsDesktop();
+  console.log(isDesktop);
 
   return (
     <>
-      {isDesktop ? (
+      <SocketProvider />
+      {isDesktop === null ? (
+        <div className="h-screen bg-[#050d1a] flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : isDesktop ? (
         /* 데스크탑 레이아웃 (기존 그대로) */
         <div className="grid h-screen bg-[#050d1a] text-white grid-cols-12 grid-rows-[48px_24px_1fr_340px]">
-          <SocketProvider />
           <div className="col-span-12 border-b border-gray-700">
             <FutureHeader initialTrade={trade} />
           </div>
@@ -55,8 +60,6 @@ export default function FutureClientLayout({
       ) : (
         /* 모바일 레이아웃 */
         <div className="flex flex-col   bg-[#050d1a] text-white h-full">
-          <SocketProvider />
-
           {/* 헤더 */}
           <div className="border-b border-gray-700 shrink-0 h-14">
             <FutureHeader initialTrade={trade} />
