@@ -99,7 +99,7 @@ export default function OrderBook({
     const result = depthData.asks.map((_: OrderItem, i: number) =>
       depthData.asks
         .slice(0, i + 1)
-        .reduce((sum: number, a) => sum + parseFloat(a.quantity), 0),
+        .reduce((sum: number, a: any) => sum + parseFloat(a.quantity), 0),
     );
     return result;
   }, [depthData.asks]);
