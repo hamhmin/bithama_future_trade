@@ -1,7 +1,8 @@
+// hooks/useIsDesktop.ts
 import { useState, useEffect } from "react";
 
 export function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 1024);

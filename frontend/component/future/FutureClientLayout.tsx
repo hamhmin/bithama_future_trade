@@ -22,7 +22,6 @@ export default function FutureClientLayout({
 }) {
   const [chartOpen, setChartOpen] = useState(false);
   const isDesktop = useIsDesktop();
-  console.log(isDesktop);
 
   return (
     <>
