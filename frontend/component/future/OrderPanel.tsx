@@ -231,7 +231,6 @@ export default function OrderPanel() {
       setLoading(false);
     }
   };
-
   return (
     <div className="w-full h-full flex flex-col p-3 gap-3 text-sm">
       {/* 마진타입 + 레버리지 */}

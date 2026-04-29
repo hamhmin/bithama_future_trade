@@ -61,7 +61,6 @@ export default function OrderForm({
   const isInsufficient = wallet
     ? wallet.balance < totalRequired && parseFloat(size) > 0
     : false;
-
   return (
     // return 최상단
     <div className="flex flex-col gap-2">
@@ -143,8 +142,9 @@ export default function OrderForm({
               const maxSize =
                 wallet.balance /
                 (executionPrice * (1 / leverage + TAKER_FEE_RATE));
+              const safeSize = Math.floor(maxSize * 10000) / 10000;
 
-              onSizeChange(((maxSize * percent) / 100).toFixed(4));
+              onSizeChange(((safeSize * percent) / 100).toFixed(4));
               setSelectedPercent(percent);
             }}
             className={`flex-1 py-1 rounded text-xs transition-colors cursor-pointer ${
