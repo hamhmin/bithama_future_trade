@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import ShareCard from "./ShareCard";
 import toast from "react-hot-toast";
@@ -428,17 +428,21 @@ export default function PositionTable({
   const [tpslTarget, setTpslTarget] = useState<Position | null>(null);
   const [shareTarget, setShareTarget] = useState<Position | null>(null);
 
-  const calcPnl = (position: Position) => {
-    if (!currentPrice) return 0;
-    return position.side === "long"
-      ? (currentPrice - position.entryPrice) * position.size
-      : (position.entryPrice - currentPrice) * position.size;
-  };
-
-  const calcRoe = (position: Position) => {
-    const pnl = calcPnl(position);
-    return (pnl / position.margin) * 100;
-  };
+  const pnlMap = useMemo(() => {
+    return positions.reduce(
+      (acc, pos) => {
+        const pnl = !currentPrice
+          ? 0
+          : pos.side === "long"
+            ? (currentPrice - pos.entryPrice) * pos.size
+            : (pos.entryPrice - currentPrice) * pos.size;
+        const roe = (pnl / pos.margin) * 100;
+        acc[pos.id] = { pnl, roe };
+        return acc;
+      },
+      {} as Record<number, { pnl: number; roe: number }>,
+    );
+  }, [positions, currentPrice]);
 
   if (positions.length === 0) {
     return (
@@ -467,8 +471,8 @@ export default function PositionTable({
         </thead>
         <tbody>
           {positions.map((pos) => {
-            const pnl = calcPnl(pos);
-            const roe = calcRoe(pos);
+            const { pnl, roe } = pnlMap[pos.id] ?? { pnl: 0, roe: 0 };
+
             const isProfit = pnl >= 0;
 
             return (

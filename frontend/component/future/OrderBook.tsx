@@ -1,7 +1,7 @@
 "use client";
 
 import { useFutureStore } from "@/store/useFutureStore";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 export const getUsdtPrice = async () => {
   try {
     const response = await fetch(
@@ -94,29 +94,36 @@ export default function OrderBook({
   );
   const maxQuantity = Math.max(...allQuantities, 0.0001);
   // asks: 중앙(index 0)부터 위로 누적
-  const asksCumulative = depthData.asks.map((_: OrderItem, i: number) =>
-    depthData.asks
-      .slice(0, i + 1)
-      .reduce(
-        (sum: number, a: { price: string; quantity: string }) =>
-          sum + parseFloat(a.quantity),
-        0,
-      ),
-  );
+
+  const asksCumulative = useMemo(() => {
+    const result = depthData.asks.map((_: OrderItem, i: number) =>
+      depthData.asks
+        .slice(0, i + 1)
+        .reduce((sum: number, a) => sum + parseFloat(a.quantity), 0),
+    );
+    return result;
+  }, [depthData.asks]);
 
   // bids: 중앙(index 0)부터 아래로 누적
-  const bidsCumulative = depthData.bids.map((_: OrderItem, i: number) =>
-    depthData.bids
-      .slice(0, i + 1)
-      .reduce(
-        (sum: number, b: { price: string; quantity: string }) =>
-          sum + parseFloat(b.quantity),
-        0,
+  const bidsCumulative = useMemo(
+    () =>
+      depthData.bids.map((_: OrderItem, i: number) =>
+        depthData.bids
+          .slice(0, i + 1)
+          .reduce(
+            (sum: number, b: { price: string; quantity: string }) =>
+              sum + parseFloat(b.quantity),
+            0,
+          ),
       ),
+    [depthData.bids],
   );
 
   // 전체 기준 최대값
-  const maxCumulative = Math.max(...asksCumulative, ...bidsCumulative, 0.0001);
+  const maxCumulative = useMemo(
+    () => Math.max(...asksCumulative, ...bidsCumulative, 0.0001),
+    [asksCumulative, bidsCumulative],
+  );
 
   const lastAsks = parseFloat(depthData.asks[0]?.price || "0");
   const firstBids = parseFloat(depthData.bids[0]?.price || "0");

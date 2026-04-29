@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import GuestModal from "@/component/common/GuestModal";
 import MarginLeverageBar from "./order/MarginLeverageBar";
@@ -64,14 +64,15 @@ export default function OrderPanel() {
       ? (executionPrice * parseFloat(size)) / leverage
       : 0;
 
-  const previewLiqPrice =
-    executionPrice && parseFloat(size) > 0
-      ? marginType === "isolated"
-        ? side === "long"
-          ? executionPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE)
-          : executionPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE)
-        : 0
-      : 0;
+  const previewLiqPrice = useMemo(() => {
+    if (!executionPrice || parseFloat(size) <= 0) return 0;
+    if (marginType === "isolated") {
+      return side === "long"
+        ? executionPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE)
+        : executionPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE);
+    }
+    return 0;
+  }, [executionPrice, size, marginType, side, leverage]);
 
   const fetchPosition = async () => {
     setFetchLoading(true); // 시작 시 로딩

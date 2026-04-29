@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createChart, CandlestickSeries } from "lightweight-charts";
 import { useFutureStore } from "@/store/useFutureStore";
 
@@ -31,7 +31,7 @@ type Order = {
   type: string;
 };
 
-export default function TradingChart() {
+const TradingChart = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartInterval, setChartInterval] = useState(INTERVALS[0]);
   const tradeData = useFutureStore((state) => state.tradeData);
@@ -277,4 +277,6 @@ export default function TradingChart() {
       <div ref={chartContainerRef} className="flex-1" />
     </div>
   );
-}
+};
+
+export default React.memo(TradingChart);
