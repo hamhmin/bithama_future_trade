@@ -66,6 +66,39 @@ export default function LoginPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSubmit();
   };
+  const handleGuest = async () => {
+    setLoading(true);
+    const guestEmail = `guest_${Date.now()}@bithama.com`;
+    const guestPassword = `guest_${Date.now()}`;
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: guestEmail,
+          password: guestPassword,
+          nickname: `Guest_${Math.floor(Math.random() * 10000)}`,
+        }),
+      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: guestEmail, password: guestPassword }),
+        },
+      );
+      if (res.ok) {
+        router.replace("/future");
+      }
+    } catch {
+      setMessage("게스트 로그인 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 items-center justify-center bg-gray-900 min-h-screen">
@@ -143,7 +176,31 @@ export default function LoginPage() {
         >
           {loading ? "처리중..." : isRegister ? "회원가입" : "로그인"}
         </button>
+        {/* 게스트 로그인 */}
+        {!isRegister && (
+          <>
+            {/* 구분선 */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-gray-700" />
+              <span className="text-gray-600 text-xs">또는</span>
+              <div className="flex-1 h-px bg-gray-700" />
+            </div>
 
+            {/* 게스트 안내 */}
+            <p className="text-center text-gray-500 text-xs">
+              게스트는 일회용 계정이에요. 10만 USDT가 자동으로 지급돼요.
+            </p>
+
+            {/* 게스트 로그인 */}
+            <button
+              onClick={handleGuest}
+              disabled={loading}
+              className="w-full py-3 rounded font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+            >
+              게스트로 시작하기
+            </button>
+          </>
+        )}
         {/* 전환 */}
         <p className="text-center text-gray-400 text-xs">
           {isRegister ? "이미 계정이 있나요?" : "계정이 없나요?"}
