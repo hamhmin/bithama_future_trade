@@ -52,9 +52,8 @@ const features = [
 export default function FeatureSection() {
   return (
     <section id="features" className="py-32 bg-[#050d1a] relative">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-sky-500/5 rounded-full blur-[120px]" />
-
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,90vw)] h-[min(400px,50vw)] bg-sky-500/5 rounded-full blur-[120px]" />
+      <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs mb-4">
             주요 기능

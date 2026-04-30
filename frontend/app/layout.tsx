@@ -55,7 +55,7 @@ export default function RootLayout({
           content="5b7f1dea72120664c4326bf462842d23657c2d1f"
         />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col overflow-x-hidden">
         <div className="hidden">
           <Link href={"/"}>index</Link>
           <br />
@@ -85,7 +85,6 @@ export default function RootLayout({
             duration: 3000,
           }}
         />
-        <hr />
         {children}
       </body>
     </html>

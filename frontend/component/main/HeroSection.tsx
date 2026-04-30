@@ -13,7 +13,7 @@ const Spline = dynamic(
 
 export default function HeroSection() {
   return (
-    <section className="relative w-full h-screen flex items-center overflow-hidden bg-[#050d1a]">
+    <section className="relative w-full md:h-screen flex items-center overflow-hidden bg-[#050d1a] pt-[40px] md:pt-0 h-full">
       {/* 배경 그라디언트 */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0c1f3d]/60 via-[#050d1a] to-[#071428]/60" />
 
@@ -29,7 +29,7 @@ export default function HeroSection() {
       </div>
 
       {/* 텍스트 */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-6 w-full">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
@@ -53,7 +53,7 @@ export default function HeroSection() {
             10만 USDT로 시작해 실력을 키우고 실전에 도전하세요.
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Link
               href="/future"
               className="px-8 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-sky-500 to-blue-700 hover:opacity-90 transition-opacity shadow-lg shadow-sky-500/20"
@@ -68,13 +68,16 @@ export default function HeroSection() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-8 mt-12">
+          <div className="flex items-start md:items-center gap-8 mt-12 flex-wrap md:flex-nowrap">
             {[
               { label: "초기 지급 USDT", value: "100,000" },
               { label: "레버리지", value: "최대 100x" },
               { label: "실시간 데이터", value: "바이낸스" },
             ].map((stat, i) => (
-              <div key={i} className="flex flex-col">
+              <div
+                key={i}
+                className="flex flex-col w-full text-center md:text-left"
+              >
                 <span className="text-white font-bold text-xl">
                   {stat.value}
                 </span>
