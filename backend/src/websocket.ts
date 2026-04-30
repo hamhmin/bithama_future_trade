@@ -413,9 +413,15 @@ export const connectBinanceQuote = (wss: WebSocketServer) => {
   }, 100);
 
   // 청산, 지정가체결체크를 매초마다 하면 부하가 걸려 걸리는 순간 db 먹통되서 체결가 발송되지않음. 체크가 끝나면 다시 실행하도록 수정.
-  const startLiquidationCheck = async (currentPrice: any) => {
+  const startLiquidationCheck = async (currentPrice: number) => {
+    // currentPrice가 0이면 실행하지 않음
+    if (!currentPrice) {
+      setTimeout(() => {
+        if (latestPrice) startLiquidationCheck(latestPrice);
+      }, 1000);
+      return;
+    }
     try {
-      // 자동 청산 + 지정가 체결 체크
       await checkLiquidation(currentPrice);
       await checkLimitOrders(currentPrice);
     } catch (err) {
