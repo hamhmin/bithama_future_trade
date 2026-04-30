@@ -354,8 +354,13 @@ router.delete(
     const userId = req.userId!;
     const orderId = parseInt(req.params.id as string);
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-
+    const order = await prisma.order.findFirst({
+      where: { id: parseInt(req.params.id as string), userId },
+    });
+    if (!order) {
+      res.status(403).json({ message: "권한이 없어요." });
+      return;
+    }
     if (!order || order.userId !== userId) {
       res.status(404).json({ message: "주문을 찾을 수 없어요." });
       return;
@@ -404,12 +409,16 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
     const positionId = parseInt(req.params.id as string);
+
     const { size, type = "market", price } = req.body; // size 추가
 
-    const position = await prisma.position.findUnique({
-      where: { id: positionId },
+    const position = await prisma.position.findFirst({
+      where: { id: positionId, userId }, // userId 추가
     });
-
+    if (!position) {
+      res.status(403).json({ message: "권한이 없어요." });
+      return;
+    }
     if (!position || position.userId !== userId) {
       res.status(404).json({ message: "포지션을 찾을 수 없어요." });
       return;
@@ -521,9 +530,14 @@ router.post(
     }
 
     const [position, wallet] = await Promise.all([
-      prisma.position.findUnique({ where: { id: positionId } }),
+      prisma.position.findFirst({ where: { id: positionId, userId } }),
       prisma.wallet.findUnique({ where: { userId } }),
     ]);
+
+    if (!position) {
+      res.status(403).json({ message: "권한이 없어요." });
+      return;
+    }
 
     if (!position || position.userId !== userId) {
       res.status(404).json({ message: "포지션을 찾을 수 없어요." });
@@ -593,9 +607,14 @@ router.post(
       return;
     }
 
-    const position = await prisma.position.findUnique({
-      where: { id: positionId },
+    const position = await prisma.position.findFirst({
+      where: { id: parseInt(req.params.id as string), userId },
     });
+
+    if (!position) {
+      res.status(403).json({ message: "권한이 없어요." });
+      return;
+    }
 
     if (!position || position.userId !== userId) {
       res.status(404).json({ message: "포지션을 찾을 수 없어요." });
