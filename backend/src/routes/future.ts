@@ -6,6 +6,7 @@ import type { AuthRequest } from "../middleware/auth.js";
 import { latestPrice } from "../websocket.js";
 import { sendToUser } from "../websocket.js";
 import { latestDepth, latestTradeData } from "../websocket.js";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
@@ -55,9 +56,15 @@ function calcLiquidationPrice(
   }
 }
 
+const orderLimiter = rateLimit({
+  windowMs: 1000, // 1초에 1번
+  max: 1,
+  message: { message: "요청이 너무 많아요. 잠시 후 다시 시도해주세요." },
+});
 // 주문 API
 router.post(
   "/order",
+  orderLimiter,
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
@@ -133,7 +140,13 @@ router.post(
       marginType === "isolated"
         ? calcIsolatedLiqPrice(side, executionPrice, leverage)
         : calcCrossLiqPrice(side, executionPrice, size, walletTotal);
-
+    console.log("청산가 계산:", {
+      side,
+      executionPrice,
+      leverage,
+      margin,
+      liquidationPrice,
+    });
     try {
       if (type === "market") {
         const result = await prisma.$transaction(async (tx) => {

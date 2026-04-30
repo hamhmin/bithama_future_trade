@@ -6,6 +6,7 @@ import prisma from "../prisma.js";
 import jwt from "jsonwebtoken";
 import { authMiddleware } from "../middleware/auth.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
@@ -76,8 +77,13 @@ router.post("/register", async (req: Request, res: Response) => {
   }
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: "로그인 시도가 너무 많아요. 잠시 후 다시 시도해주세요." },
+});
 // 로그인
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
