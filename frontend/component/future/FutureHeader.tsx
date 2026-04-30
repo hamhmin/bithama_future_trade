@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useFutureStore } from "@/store/useFutureStore";
 import GuestModal from "../common/GuestModal";
+import Link from "next/link";
 
 type TickerData = {
   lastPrice: string;
@@ -200,18 +201,17 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
       <div className="flex lg:hidden flex-col w-full py-1 gap-0.5">
         {/* 1행: 심볼 + 현재가 + 등락률 + 우측버튼 */}
         <div className="flex items-center gap-2">
-          {/* 심볼 */}
-          <span className="text-white font-bold text-sm shrink-0">BTCUSDT</span>
-          <span className="text-gray-500 text-[10px] shrink-0">무기한</span>
-
-          {/* 현재가 */}
+          <Link href="/" className="text-blue-400 font-bold text-sm shrink-0">
+            BITHAMA
+          </Link>
+          <div className="w-px h-4 bg-gray-700 shrink-0" />
           <span
-            className={`font-bold text-sm transition-colors ${priceUp ? "text-green-400" : "text-red-400"}`}
+            className={`font-bold text-sm transition-colors shrink-0 ${priceUp ? "text-green-400" : "text-red-400"}`}
           >
             {currentPrice > 0 ? currentPrice.toLocaleString() : "-"}
           </span>
           <span
-            className={`text-[10px] ${isPositive ? "text-green-400" : "text-red-400"}`}
+            className={`text-[10px] shrink-0 ${isPositive ? "text-green-400" : "text-red-400"}`}
           >
             {isPositive ? "+" : ""}
             {changePercent.toFixed(2)}%
@@ -237,22 +237,22 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
                 >
                   로그인
                 </button>
-                <button
+                {/* <button
                   onClick={() => {
-                    // setModalMode("register");
                     setShowModal(true);
                   }}
                   className="px-2 py-0.5 rounded text-[10px] text-gray-300 border border-gray-700"
                 >
                   회원가입
-                </button>
+                </button> */}
               </>
             ) : null}
           </div>
         </div>
 
-        {/* 2행: 고가 / 저가 / 거래량 / 가용잔고 */}
+        {/* 2행: BTCUSDT + 고가 / 저가 / 거래량 / 잔고 */}
         <div className="flex items-center gap-3 text-[10px]">
+          <span className="text-white font-bold shrink-0">BTCUSDT</span>
           <span className="text-gray-500">
             고가{" "}
             <span className="text-white">
