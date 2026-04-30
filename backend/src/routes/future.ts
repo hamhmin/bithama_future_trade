@@ -140,13 +140,7 @@ router.post(
       marginType === "isolated"
         ? calcIsolatedLiqPrice(side, executionPrice, leverage)
         : calcCrossLiqPrice(side, executionPrice, size, walletTotal);
-    console.log("청산가 계산:", {
-      side,
-      executionPrice,
-      leverage,
-      margin,
-      liquidationPrice,
-    });
+
     try {
       if (type === "market") {
         const result = await prisma.$transaction(async (tx) => {
