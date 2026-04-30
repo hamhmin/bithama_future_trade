@@ -92,6 +92,10 @@ router.post(
       res.status(400).json({ message: "side는 long 또는 short이어야 해요." });
       return;
     }
+    if (size <= 0) {
+      res.status(400).json({ message: "수량은 0보다 커야 해요." });
+      return;
+    }
     if (!["market", "limit"].includes(type)) {
       res.status(400).json({ message: "type은 market 또는 limit이어야 해요." });
       return;
