@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           {
             title: "7. 문의",
             content:
-              "개인정보 처리에 관한 문의사항은 bithama.contact@gmail.com 으로 연락해주세요.",
+              "개인정보 처리에 관한 문의사항은 admin@bithama.com 으로 연락해주세요.",
           },
         ].map((section) => (
           <div key={section.title} className="flex flex-col gap-2">

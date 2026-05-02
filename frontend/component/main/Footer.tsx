@@ -30,7 +30,12 @@ export default function Footer() {
             >
               서비스 이용약관
             </Link>
-
+            <a
+              className="text-gray-500 hover:text-gray-300 text-xs transition-colors"
+              href="mailto:admin@bithama.com"
+            >
+              문의하기
+            </a>
             <span>© 2026 BITHAMA. All rights reserved.</span>
           </div>
         </div>

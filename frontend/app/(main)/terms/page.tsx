@@ -48,7 +48,7 @@ export default function TermsPage() {
           {
             title: "제8조 (문의)",
             content:
-              "서비스 이용 관련 문의는 bithama.contact@gmail.com 으로 연락해주세요.",
+              "서비스 이용 관련 문의는 admin@bithama.com 으로 연락해주세요.",
           },
         ].map((section) => (
           <div key={section.title} className="flex flex-col gap-2">
