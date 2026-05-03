@@ -41,6 +41,13 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
   const authStatus = useFutureStore((state) => state.authStatus);
   const isInitialLoadedRef = useRef(false); // 🔑 핵심 플래그
   const isLoadingMoreRef = useRef(false); // 스크롤 중복 방지
+  const lastDisconnectedAt = useFutureStore(
+    (state) => state.lastDisconnectedAt,
+  );
+  const setLastDisconnectedAt = useFutureStore(
+    (state) => state.setLastDisconnectedAt,
+  );
+  const socket = useFutureStore((state) => state.socket);
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -59,6 +66,39 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
       if (ordRes.ok) setOrders(await ordRes.json());
     } catch {}
   };
+  useEffect(() => {
+    // socket이 새로 연결되고 끊긴 시간이 있으면 캔들 보완
+    if (!socket || !lastDisconnectedAt || !candleSeriesRef.current) return;
+
+    const fillGapCandles = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
+        );
+        const candles = await res.json();
+        const formatted = candles.map((c: any) => ({
+          time: Math.floor(c.openTime / 1000),
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        }));
+
+        // 끊긴 구간 이후 캔들만 update
+        const disconnectTime = Math.floor(lastDisconnectedAt / 1000);
+        const newCandles = formatted.filter(
+          (c: any) => c.time >= disconnectTime,
+        );
+        newCandles.forEach((c: any) => candleSeriesRef.current?.update(c));
+
+        setLastDisconnectedAt(null); // 처리 완료 후 초기화
+      } catch (err) {
+        console.error("캔들 보완 실패:", err);
+      }
+    };
+
+    fillGapCandles();
+  }, [socket]); // socket 객체가 바뀔 때(재연결) 실행
 
   useEffect(() => {
     if (authStatus !== "logged-in") {

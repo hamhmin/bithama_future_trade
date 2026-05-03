@@ -34,6 +34,8 @@ interface FutureStore {
   setSelectedPrice: (v: number | null) => void;
   // setTradeData: (v: TradeData) => void;
   // setDepthData: (v: DepthData) => void;
+  lastDisconnectedAt: number | null;
+  setLastDisconnectedAt: (t: number | null) => void;
 }
 
 const dummyDepthData = {
@@ -69,6 +71,9 @@ const emptyDepthData = {
   asks: [],
 };
 export const useFutureStore = create<FutureStore>((set, get) => ({
+  lastDisconnectedAt: null,
+  setLastDisconnectedAt: (t) => set({ lastDisconnectedAt: t }),
+
   selectedPrice: null,
   setSelectedPrice: (price) => {
     set({ selectedPrice: price });
@@ -90,11 +95,43 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
 
     const socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!);
 
+    // heartbeat 변수
+    let pingInterval: ReturnType<typeof setInterval> | null = null;
+    let pongTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const startHeartbeat = () => {
+      pingInterval = setInterval(() => {
+        if (socket.readyState !== WebSocket.OPEN) return;
+
+        // ping 전송
+        socket.send(JSON.stringify({ type: "ping" }));
+
+        // 10초 안에 pong 없으면 강제 재연결
+        pongTimeout = setTimeout(() => {
+          console.warn("pong 응답 없음 → 소켓 강제 종료 후 재연결");
+          socket.close();
+        }, 10000);
+      }, 30000);
+    };
+
+    const stopHeartbeat = () => {
+      if (pingInterval) clearInterval(pingInterval);
+      if (pongTimeout) clearTimeout(pongTimeout);
+    };
+
+    socket.onopen = () => {
+      startHeartbeat();
+    };
+
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      // console.log(data);
 
-      // 체결/청산 이벤트 수신 추가
+      // pong 수신 시 타임아웃 취소
+      if (data.type === "pong") {
+        if (pongTimeout) clearTimeout(pongTimeout);
+        return;
+      }
+
       if (data.type === "filled") {
         toast.success(data.message ?? "주문 체결!");
         set({ shouldRefresh: true });
@@ -128,7 +165,8 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
 
     socket.onclose = () => {
       console.log("소켓 끊김, 재연결...");
-      set({ socket: null });
+      stopHeartbeat(); // 재연결 전 heartbeat 정리
+      set({ socket: null, lastDisconnectedAt: Date.now() });
       setTimeout(() => {
         // socket이 null일 때만 재연결 (의도적 종료 아닐 때)
         if (get().socket !== null) return;
@@ -137,7 +175,7 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
     };
 
     socket.onerror = (err) => {
-      console.error("소켓 오류 상세:", JSON.stringify(err), err);
+      console.error("소켓 오류:", JSON.stringify(err), err);
     };
 
     set({ socket });

@@ -46,6 +46,11 @@ const wss = new WebSocketServer({ server });
 wss.on("connection", (clientWs) => {
   console.log("프론트 WebSocket 연결됐어요!");
 
+  // heartbeat pong 응답 추가
+  clientWs.on("ping", () => {
+    clientWs.pong();
+  });
+
   clientWs.on("message", (data) => {
     try {
       const msg = JSON.parse(data.toString());
@@ -54,6 +59,11 @@ wss.on("connection", (clientWs) => {
       if (msg.type === "auth" && msg.userId) {
         userSocketMap.set(msg.userId, clientWs);
         console.log(`유저 ${msg.userId} 소켓 등록됐어요!`);
+      }
+
+      // ping 메시지로 오는 경우도 처리 (브라우저는 ws.ping() 없음)
+      if (msg.type === "ping") {
+        clientWs.send(JSON.stringify({ type: "pong" }));
       }
     } catch {}
   });
