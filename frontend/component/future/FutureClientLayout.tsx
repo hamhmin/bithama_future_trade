@@ -16,9 +16,11 @@ type MobileTab = "chart" | "orderbook" | "order" | "position";
 export default function FutureClientLayout({
   depth,
   trade,
+  initialCandles = [],
 }: {
   depth: any;
   trade: any;
+  initialCandles?: any[];
 }) {
   const [chartOpen, setChartOpen] = useState(false);
   const isDesktop = useIsDesktop();
@@ -32,7 +34,7 @@ export default function FutureClientLayout({
         </div>
       ) : isDesktop ? (
         /* 데스크탑 레이아웃 (기존 그대로) */
-        <div className="grid h-screen bg-[#050d1a] text-white grid-cols-12 grid-rows-[48px_24px_1fr_340px]">
+        <div className="grid h-full bg-[#050d1a] text-white grid-cols-12 grid-rows-[48px_24px_1fr_340px]">
           <div className="col-span-12 border-b border-gray-700">
             <FutureHeader initialTrade={trade} />
           </div>
@@ -41,7 +43,7 @@ export default function FutureClientLayout({
             <TickerScroll />
           </div>
           <div className="col-span-7 border-r border-gray-700">
-            <TradingChart />
+            <TradingChart initialCandles={initialCandles} />
           </div>
           <div className="col-span-2 border-r border-gray-700 overflow-hidden">
             <OrderBook initialDepth={depth} initialTrade={trade} />
@@ -102,7 +104,7 @@ export default function FutureClientLayout({
                 </button>
               </div>
               <div className="flex-1">
-                <TradingChart />
+                <TradingChart initialCandles={initialCandles} />
               </div>
             </div>
           )}

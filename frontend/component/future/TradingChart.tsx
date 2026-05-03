@@ -31,7 +31,7 @@ type Order = {
   type: string;
 };
 
-const TradingChart = () => {
+const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartInterval, setChartInterval] = useState(INTERVALS[0]);
   const tradeData = useFutureStore((state) => state.tradeData);
@@ -39,11 +39,12 @@ const TradingChart = () => {
   const currentCandleRef = useRef<any>(null);
   const priceLineRefs = useRef<any[]>([]);
   const authStatus = useFutureStore((state) => state.authStatus);
+  const isInitialLoadedRef = useRef(false); // 🔑 핵심 플래그
+  const isLoadingMoreRef = useRef(false); // 스크롤 중복 방지
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // 포지션 + 주문 가져오기
   const fetchLines = async () => {
     try {
       const [posRes, ordRes] = await Promise.all([
@@ -56,9 +57,7 @@ const TradingChart = () => {
       ]);
       if (posRes.ok) setPositions(await posRes.json());
       if (ordRes.ok) setOrders(await ordRes.json());
-    } catch {
-      // 비로그인이면 빈 배열 유지
-    }
+    } catch {}
   };
 
   useEffect(() => {
@@ -71,17 +70,17 @@ const TradingChart = () => {
     const interval = setInterval(fetchLines, 5000);
     return () => clearInterval(interval);
   }, [authStatus]);
+
   // 차트 초기화
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    isInitialLoadedRef.current = false; // 인터벌 바뀌면 플래그 초기화
+
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
-      layout: {
-        background: { color: "#111827" },
-        textColor: "#9ca3af",
-      },
+      layout: { background: { color: "#111827" }, textColor: "#9ca3af" },
       grid: {
         vertLines: { color: "#1f2937" },
         horzLines: { color: "#1f2937" },
@@ -98,22 +97,31 @@ const TradingChart = () => {
 
     candleSeriesRef.current = candleSeries;
     currentCandleRef.current = null;
-    priceLineRefs.current = []; // 차트 새로 만들면 라인도 초기화
+    priceLineRefs.current = [];
+
+    const formatCandles = (candles: any[]) =>
+      candles.map((c: any) => ({
+        time: Math.floor(c.openTime / 1000),
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }));
 
     const loadInitialCandles = async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
-        );
-        const candles = await res.json();
+        let formatted: any[] = [];
 
-        const formatted = candles.map((c: any) => ({
-          time: Math.floor(c.openTime / 1000),
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close,
-        }));
+        // SSR 데이터 있고 1m 첫 진입이면 바로 사용
+        if (initialCandles.length > 0 && chartInterval.label === "1m") {
+          formatted = formatCandles(initialCandles);
+        } else {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}`,
+          );
+          const candles = await res.json();
+          formatted = formatCandles(candles);
+        }
 
         candleSeries.setData(formatted);
         chart.timeScale().fitContent();
@@ -123,10 +131,43 @@ const TradingChart = () => {
         }
       } catch (err) {
         console.error("초기 캔들 로딩 실패:", err);
+      } finally {
+        isInitialLoadedRef.current = true; // 성공/실패 무관하게 완료 처리
       }
     };
 
     loadInitialCandles();
+
+    // 스크롤 왼쪽 끝 도달 시 추가 캔들 로딩
+    const handleRangeChange = async () => {
+      if (isLoadingMoreRef.current) return;
+      const range = chart.timeScale().getVisibleLogicalRange();
+      if (!range || range.from > 5) return; // 왼쪽 끝 근처 아니면 무시
+
+      const currentData = candleSeriesRef.current?.data?.();
+      if (!currentData || currentData.length === 0) return;
+
+      isLoadingMoreRef.current = true;
+      try {
+        const oldest = currentData[0];
+        const beforeTime = oldest.time * 1000;
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/candles?symbol=BTCUSDT&interval=${chartInterval.label}&before=${beforeTime}`,
+        );
+        const moreCandles = await res.json();
+        if (moreCandles.length === 0) return;
+
+        const formatted = formatCandles(moreCandles);
+        candleSeriesRef.current.setData([...formatted, ...currentData]);
+      } catch (err) {
+        console.error("추가 캔들 로딩 실패:", err);
+      } finally {
+        isLoadingMoreRef.current = false;
+      }
+    };
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleRangeChange);
 
     const handleResize = () => {
       if (chartContainerRef.current) {
@@ -136,10 +177,10 @@ const TradingChart = () => {
         });
       }
     };
-
     window.addEventListener("resize", handleResize);
 
     return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleRangeChange);
       window.removeEventListener("resize", handleResize);
       chart.remove();
       candleSeriesRef.current = null;
@@ -147,9 +188,10 @@ const TradingChart = () => {
     };
   }, [chartInterval]);
 
-  // tradeData 업데이트 시 캔들 갱신
+  // tradeData 업데이트 시 캔들 갱신 — 플래그 체크 추가
   useEffect(() => {
     if (!tradeData || !candleSeriesRef.current) return;
+    if (!isInitialLoadedRef.current) return; // 🔑 로딩 완료 전 무시
 
     const price = parseFloat(tradeData.price);
     const time =
@@ -178,11 +220,10 @@ const TradingChart = () => {
     candleSeriesRef.current.update(currentCandleRef.current);
   }, [tradeData]);
 
-  // 포지션/주문 라인 그리기
+  // 포지션/주문 라인 그리기 (기존 코드 그대로)
   useEffect(() => {
     if (!candleSeriesRef.current) return;
 
-    // 기존 라인 전부 제거
     priceLineRefs.current.forEach((line) => {
       try {
         candleSeriesRef.current?.removePriceLine(line);
@@ -190,50 +231,45 @@ const TradingChart = () => {
     });
     priceLineRefs.current = [];
 
-    // 포지션 라인
     positions.forEach((pos) => {
-      // 진입가 라인
       const entryLine = candleSeriesRef.current.createPriceLine({
         price: pos.entryPrice,
         color: pos.side === "long" ? "#22c55e" : "#ef4444",
         lineWidth: 1,
-        lineStyle: 0, // 실선
+        lineStyle: 0,
         axisLabelVisible: true,
         title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 진입가`,
       });
       priceLineRefs.current.push(entryLine);
 
-      // 청산가 라인
       const liqLine = candleSeriesRef.current.createPriceLine({
         price: pos.liquidationPrice,
         color: "#f97316",
         lineWidth: 1,
-        lineStyle: 3, // 점선
+        lineStyle: 3,
         axisLabelVisible: true,
-        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 청산가`, // 수정
+        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 청산가`,
       });
       priceLineRefs.current.push(liqLine);
 
-      // TP 라인
       if (pos.takeProfit) {
         const tpLine = candleSeriesRef.current.createPriceLine({
           price: pos.takeProfit,
           color: "#22c55e",
           lineWidth: 1,
-          lineStyle: 2, // 파선
+          lineStyle: 2,
           axisLabelVisible: true,
           title: "TP",
         });
         priceLineRefs.current.push(tpLine);
       }
 
-      // SL 라인
       if (pos.stopLoss) {
         const slLine = candleSeriesRef.current.createPriceLine({
           price: pos.stopLoss,
           color: "#ef4444",
           lineWidth: 1,
-          lineStyle: 2, // 파선
+          lineStyle: 2,
           axisLabelVisible: true,
           title: "SL",
         });
@@ -241,17 +277,15 @@ const TradingChart = () => {
       }
     });
 
-    // 지정가 주문 라인
     orders.forEach((order) => {
-      if (!order.price || order.type !== "limit") return;
-
+      if (!order.price) return;
       const orderLine = candleSeriesRef.current.createPriceLine({
         price: order.price,
-        color: order.side === "long" ? "#86efac" : "#fca5a5",
+        color: order.side === "long" ? "#60a5fa" : "#f87171",
         lineWidth: 1,
-        lineStyle: 1, // 파선
+        lineStyle: 1,
         axisLabelVisible: true,
-        title: `${order.side === "long" ? "Long" : "Short"} 주문`,
+        title: `${order.side === "long" ? "Long" : "Short"} 지정가`,
       });
       priceLineRefs.current.push(orderLine);
     });
@@ -259,18 +293,19 @@ const TradingChart = () => {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex gap-1 p-2 border-b border-gray-700">
-        {INTERVALS.map((i) => (
+      {/* 인터벌 선택 버튼 */}
+      <div className="flex gap-1 px-2 py-1 border-b border-gray-700">
+        {INTERVALS.map((iv) => (
           <button
-            key={i.label}
-            onClick={() => setChartInterval(i)}
-            className={`px-2 py-1 text-xs rounded ${
-              chartInterval.label === i.label
-                ? "bg-blue-500 text-white"
+            key={iv.label}
+            onClick={() => setChartInterval(iv)}
+            className={`px-2 py-0.5 text-xs rounded transition-colors ${
+              chartInterval.label === iv.label
+                ? "bg-blue-600 text-white"
                 : "text-gray-400 hover:text-white"
             }`}
           >
-            {i.label}
+            {iv.label}
           </button>
         ))}
       </div>
