@@ -101,6 +101,8 @@ model Candle {
   volume   Float
 
   @@unique([symbol, interval, openTime])
+  @@index([symbol, interval, openTime]) 
+
 }
 
 model UserSymbolSetting {

@@ -56,23 +56,21 @@ router.get("/", async (req: Request, res: Response) => {
   const limit = 500;
 
   try {
-    const whereClause: any = {
-      symbol: symbol as string,
-      interval: interval as string,
-    };
-
-    // before 있으면 그 이전 데이터 (스크롤 페이지네이션)
-    if (before) {
-      whereClause.openTime = { lt: Number(before) };
-    }
-
+    // console.time("candle-query");
     const candles = await prisma.candle.findMany({
-      where: whereClause,
+      where: {
+        symbol: symbol as string,
+        interval: interval as string,
+        ...(before
+          ? { openTime: { lt: BigInt(Math.floor(Number(before))) } }
+          : {}),
+      },
       orderBy: { openTime: "desc" },
       take: limit,
     });
+    // console.timeEnd("candle-query");
+    // console.log("candles.length:", candles.length, "before:", before);
 
-    // DB에 데이터 없으면 바이낸스 fallback
     if (candles.length === 0 && before) {
       const fallback = await fetchFromBinanceAndSave(
         symbol as string,

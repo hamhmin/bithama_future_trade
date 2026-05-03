@@ -125,6 +125,29 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
         vertLines: { color: "#1f2937" },
         horzLines: { color: "#1f2937" },
       },
+      localization: {
+        timeFormatter: (time: number) => {
+          const date = new Date(time * 1000);
+          // UTC+9 직접 변환
+          const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+          const yyyy = kstDate.getUTCFullYear();
+          const mm = String(kstDate.getUTCMonth() + 1).padStart(2, "0");
+          const dd = String(kstDate.getUTCDate()).padStart(2, "0");
+          const hh = String(kstDate.getUTCHours()).padStart(2, "0");
+          const min = String(kstDate.getUTCMinutes()).padStart(2, "0");
+          return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+        },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        tickMarkFormatter: (time: number) => {
+          const date = new Date((time + 9 * 60 * 60) * 1000);
+          const hh = String(date.getUTCHours()).padStart(2, "0");
+          const min = String(date.getUTCMinutes()).padStart(2, "0");
+          return `${hh}:${min}`;
+        },
+      },
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -182,7 +205,7 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
     const handleRangeChange = async () => {
       if (isLoadingMoreRef.current) return;
       const range = chart.timeScale().getVisibleLogicalRange();
-      if (!range || range.from > 5) return; // 왼쪽 끝 근처 아니면 무시
+      if (!range || range.from > 5) return;
 
       const currentData = candleSeriesRef.current?.data?.();
       if (!currentData || currentData.length === 0) return;
@@ -199,7 +222,14 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
         if (moreCandles.length === 0) return;
 
         const formatted = formatCandles(moreCandles);
-        candleSeriesRef.current.setData([...formatted, ...currentData]);
+
+        // 중복 제거 + 시간순 정렬
+        const merged = [...formatted, ...currentData];
+        const deduped = Array.from(
+          new Map(merged.map((c: any) => [c.time, c])).values(),
+        ).sort((a: any, b: any) => a.time - b.time);
+
+        candleSeriesRef.current.setData(deduped);
       } catch (err) {
         console.error("추가 캔들 로딩 실패:", err);
       } finally {
