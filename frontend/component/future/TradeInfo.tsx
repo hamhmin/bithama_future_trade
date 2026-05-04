@@ -152,7 +152,9 @@ export default function TradeInfo() {
         <div className="flex justify-between">
           <span className="text-gray-400">현재가</span>
           <span className="text-white">
-            {currentPrice > 0 ? `$${currentPrice.toLocaleString()}` : "-"}
+            {currentPrice > 0
+              ? `$${currentPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+              : "-"}
           </span>
         </div>
         <div className="flex justify-between">
