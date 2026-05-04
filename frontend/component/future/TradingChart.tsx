@@ -33,7 +33,16 @@ type Order = {
 
 const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chartInterval, setChartInterval] = useState(INTERVALS[0]);
+  const [chartInterval, setChartInterval] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("selected_interval");
+      if (saved) {
+        // 저장된 라벨과 일치하는 INTERVALS 객체를 찾습니다.
+        return INTERVALS.find((iv) => iv.label === saved) || INTERVALS[0];
+      }
+    }
+    return INTERVALS[0];
+  });
   const tradeData = useFutureStore((state) => state.tradeData);
   const candleSeriesRef = useRef<any>(null);
   const currentCandleRef = useRef<any>(null);
@@ -368,7 +377,10 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
         {INTERVALS.map((iv) => (
           <button
             key={iv.label}
-            onClick={() => setChartInterval(iv)}
+            onClick={() => {
+              setChartInterval(iv);
+              localStorage.setItem("selected_interval", iv.label); // 로컬 스토리지에 저장
+            }}
             className={`px-2 py-0.5 text-xs rounded transition-colors ${
               chartInterval.label === iv.label
                 ? "bg-blue-600 text-white"
