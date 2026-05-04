@@ -157,7 +157,7 @@ function LeverageModal({
   onClose,
   onSuccess,
 }: {
-  position: Position;
+  position: any; // 필요시 Position 타입으로 변경
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -165,12 +165,21 @@ function LeverageModal({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const QUICK_VALUES = [25, 50, 75, 100];
+  const minLeverage =
+    position.marginType === "isolated" ? position.leverage + 1 : 1;
+  const maxLeverage = 100;
+
   const MAINTENANCE_MARGIN_RATE = 0.005;
   const newLiqPrice =
     position.side === "long"
       ? position.entryPrice * (1 - 1 / leverage + MAINTENANCE_MARGIN_RATE)
       : position.entryPrice * (1 + 1 / leverage - MAINTENANCE_MARGIN_RATE);
   const newMargin = (position.entryPrice * position.size) / leverage;
+
+  const calculateProgress = () => {
+    return ((leverage - minLeverage) / (maxLeverage - minLeverage)) * 100;
+  };
 
   const handleSubmit = async () => {
     if (leverage <= position.leverage) {
@@ -193,6 +202,10 @@ function LeverageModal({
         setMessage(data.message);
         toast.error(data.message);
       } else {
+        // --- 로컬스토리지 동기화 코드 추가 ---
+        localStorage.setItem("selected_leverage", leverage.toString());
+        // ----------------------------------
+
         toast.success("레버리지 변경 완료!");
 
         onSuccess();
@@ -211,35 +224,67 @@ function LeverageModal({
       onClick={onClose}
     >
       <div
-        className="bg-gray-800 rounded-xl p-6 w-72 flex flex-col gap-4"
+        className="bg-gray-800 rounded-xl p-6 w-72 flex flex-col gap-5 shadow-2xl border border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-white font-bold">레버리지 변경</h3>
-        <p className="text-gray-400 text-xs">
-          현재 {position.leverage}x → 상향만 가능해요
-        </p>
-
         <div className="flex flex-col gap-1">
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>레버리지</span>
-            <span className="text-white font-bold">{leverage}x</span>
+          <h3 className="text-white font-bold text-sm">레버리지 변경</h3>
+          <p className="text-gray-400 text-[10px]">
+            현재 {position.leverage}x → 상향만 가능해요
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-end text-xs">
+            <span className="text-gray-400">레버리지</span>
+            <span className="text-blue-400 font-bold text-xl">{leverage}x</span>
           </div>
-          <input
-            type="range"
-            min={position.marginType === "isolated" ? position.leverage + 1 : 1}
-            max={100}
-            value={leverage}
-            onChange={(e) => setLeverage(parseInt(e.target.value))}
-            className="w-full accent-blue-500"
-          />
-          <div className="flex justify-between text-gray-600 text-xs">
-            <span>{position.leverage + 1}x</span>
-            <span>100x</span>
+
+          <div className="flex flex-col gap-1.5">
+            <input
+              type="range"
+              min={minLeverage}
+              max={maxLeverage}
+              value={leverage}
+              onChange={(e) => setLeverage(parseInt(e.target.value))}
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${calculateProgress()}%, #374151 ${calculateProgress()}%, #374151 100%)`,
+              }}
+              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-white"
+            />
+            <div className="flex justify-between text-[10px] text-gray-500 font-medium">
+              <span>{minLeverage}x</span>
+              <span>100x</span>
+            </div>
+          </div>
+
+          {/* 퀵 버튼 구성 */}
+          <div className="grid grid-cols-4 gap-1.5 mt-1">
+            {QUICK_VALUES.map((val) => {
+              const isDisabled = val < minLeverage;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => setLeverage(val)}
+                  className={`py-1 text-[11px] rounded font-medium transition-colors ${
+                    isDisabled
+                      ? "bg-gray-900 text-gray-700 cursor-not-allowed"
+                      : leverage === val
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
+                  }`}
+                >
+                  {val}x
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* 변경 후 미리보기 */}
-        <div className="flex flex-col gap-1 text-xs bg-gray-700 rounded p-3">
+        {/* 변경 후 미리보기 박스 */}
+        <div className="flex flex-col gap-1.5 text-[11px] bg-gray-900/50 rounded-lg p-3 border border-gray-700">
           <div className="flex justify-between text-gray-400">
             <span>변경 후 증거금</span>
             <span className="text-white">${newMargin.toFixed(2)}</span>
@@ -248,34 +293,49 @@ function LeverageModal({
             <span>변경 후 청산가</span>
             <span className="text-orange-400">${newLiqPrice.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-gray-400">
-            <span>환원되는 잔고</span>
-            <span className="text-green-400">
+          <div className="flex justify-between border-t border-gray-700 pt-1.5 mt-1">
+            <span className="text-gray-400 font-medium">환원되는 잔고</span>
+            <span className="text-green-400 font-bold">
               +${(position.margin - newMargin).toFixed(2)}
             </span>
           </div>
         </div>
 
         {message && (
-          <p className="text-red-400 text-xs text-center">{message}</p>
+          <p className="text-red-400 text-[10px] text-center bg-red-400/10 py-1 rounded">
+            {message}
+          </p>
         )}
 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2 rounded text-gray-400 bg-gray-700 hover:bg-gray-600 text-sm"
+            className="flex-1 py-2.5 rounded text-gray-400 bg-gray-700 hover:bg-gray-600 text-sm transition-colors"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 py-2 rounded text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-sm font-bold"
+            className="flex-1 py-2.5 rounded text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-sm font-bold transition-all shadow-lg shadow-blue-900/20"
           >
             {loading ? "처리중..." : "변경"}
           </button>
         </div>
       </div>
+
+      <style jsx>{`
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          background: white;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #3b82f6;
+          box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+        }
+      `}</style>
     </div>
   );
 }

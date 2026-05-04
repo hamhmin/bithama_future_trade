@@ -32,7 +32,13 @@ export default function OrderPanel() {
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [price, setPrice] = useState("");
   const [size, setSize] = useState("");
-  const [leverage, setLeverage] = useState(10);
+  const [leverage, setLeverage] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("selected_leverage");
+      return saved ? parseInt(saved, 10) : 10; // 저장된 값이 없으면 기본값 10
+    }
+    return 10;
+  });
   const [marginType, setMarginType] = useState<MarginType>("isolated");
   const [marginTypeLocked, setMarginTypeLocked] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,7 +81,7 @@ export default function OrderPanel() {
   }, [executionPrice, size, marginType, side, leverage]);
 
   const fetchPosition = async () => {
-    setFetchLoading(true); // 시작 시 로딩
+    setFetchLoading(true);
 
     try {
       const [posRes, ordRes, meRes] = await Promise.all([
@@ -97,9 +103,19 @@ export default function OrderPanel() {
         setOpenPosition(existing ?? null);
         setMarginTypeLocked(positions.length > 0 || orders.length > 0);
 
-        // 포지션 있으면 현재 레버리지로 동기화
+        // 포지션 있으면 현재 레버리지로 동기화 및 로컬스토리지 업데이트
         if (existing) {
-          setLeverage(existing.leverage);
+          const currentLeverage = existing.leverage;
+          setLeverage(currentLeverage);
+
+          // 로컬스토리지 값과 다를 경우에만 업데이트 (성능 최적화)
+          const savedLeverage = localStorage.getItem("selected_leverage");
+          if (savedLeverage !== currentLeverage.toString()) {
+            localStorage.setItem(
+              "selected_leverage",
+              currentLeverage.toString(),
+            );
+          }
         }
       }
 
@@ -368,7 +384,10 @@ export default function OrderPanel() {
           minLeverage={minLeverage}
           openPosition={openPosition}
           onClose={() => setShowLeverageModal(false)}
-          onChange={setLeverage}
+          onChange={(val: number) => {
+            setLeverage(val);
+            localStorage.setItem("selected_leverage", val.toString()); // 변경될 때마다 저장
+          }}
         />
       )}
 
