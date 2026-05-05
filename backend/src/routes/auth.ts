@@ -143,8 +143,17 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
     select: { balance: true, locked: true },
   });
 
-  res.json({ ...user, wallet });
+  res.json({
+    ...user,
+    wallet: wallet
+      ? {
+          balance: Math.max(0, wallet.balance),
+          locked: Math.max(0, wallet.locked),
+        }
+      : null,
+  });
 });
+
 // 닉네임 변경
 router.patch(
   "/profile",

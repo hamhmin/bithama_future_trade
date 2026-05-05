@@ -21,9 +21,14 @@ export const fetchMe = async () => {
     credentials: "include",
   });
   if (!res.ok) throw new Error("유저 로딩 실패");
-  return res.json();
+  const data = await res.json();
+  // locked 부동소수점 오차 방어
+  if (data.wallet) {
+    data.wallet.locked = Math.max(0, data.wallet.locked);
+    data.wallet.balance = Math.max(0, data.wallet.balance);
+  }
+  return data;
 };
-
 export const fetchAssets = async () => {
   const res = await fetch(`${API}/api/future/assets`, {
     credentials: "include",
