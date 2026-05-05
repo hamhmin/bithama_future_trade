@@ -376,11 +376,10 @@ function TpSlModal({
       );
       const data = await res.json();
       if (!res.ok) {
-        toast.success("TP/SL 설정 완료!");
+        toast.error(data.message);
         setMessage(data.message);
       } else {
-        toast.error(data.message);
-
+        toast.success("TP/SL 설정 완료!");
         onSuccess();
         onClose();
       }

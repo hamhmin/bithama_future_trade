@@ -203,8 +203,12 @@ export default function OrderPanel() {
         },
       );
       const data = await res.json();
-      if (res.ok) setMarginType(type);
-      else alert(data.message);
+      if (res.ok) {
+        setMarginType(type);
+        toast.success("마진타입 변경 완료!"); // 추가
+      } else {
+        toast.error(data.message); // alert → toast로 변경
+      }
     } catch {}
   };
 
