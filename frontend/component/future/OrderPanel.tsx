@@ -61,7 +61,7 @@ export default function OrderPanel() {
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
 
-  const [fetchLoading, setFetchLoading] = useState(false); // fetchLoading은 로그인 상태일 때만 true로 시작
+  const [fetchLoading, setFetchLoading] = useState(true); // fetchLoading은 로그인 상태일 때만 true로 시작
 
   const minLeverage =
     openPosition?.marginType === "isolated" ? openPosition.leverage : 1;
@@ -158,6 +158,7 @@ export default function OrderPanel() {
       setTakeProfit("");
       setStopLoss("");
       setMessage("");
+      setFetchLoading(false);
     }
     const fetchSetting = async () => {
       try {
