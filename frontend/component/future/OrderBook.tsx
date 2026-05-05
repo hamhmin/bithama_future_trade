@@ -34,6 +34,8 @@ export default function OrderBook({
   initialDepth: any;
   initialTrade: any;
 }) {
+  // console.count("OrderBook render");
+
   const [usdtPrice, setUsdtPrice] = useState<number>(0);
   const [tab, setTab] = useState<Tab>("orderbook");
   const [trades, setTrades] = useState<Trade[]>([]);

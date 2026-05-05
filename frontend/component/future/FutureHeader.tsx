@@ -18,15 +18,19 @@ type TickerData = {
 };
 
 export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
+  // console.count("FutureHeader render");
+
   const router = useRouter();
   const queryClient = useQueryClient();
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
-  const tradeFromSocket = useFutureStore((state) => state.tradeData);
-
-  const tradeData = tradeFromSocket ? tradeFromSocket : initialTrade;
-  const currentPrice = tradeData ? parseFloat(tradeData.price) : 0;
-
+  const currentPrice = useFutureStore((state) =>
+    state.tradeData
+      ? parseFloat(state.tradeData.price)
+      : initialTrade
+        ? parseFloat(initialTrade.price)
+        : 0,
+  );
   const [ticker, setTicker] = useState<TickerData | null>(null);
   const [prevPrice, setPrevPrice] = useState(0);
   const [priceUp, setPriceUp] = useState(true);

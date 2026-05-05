@@ -9,6 +9,8 @@ type TickerItem = {
 };
 
 export default function TickerScroll() {
+  // console.count("TickerScroll render");
+
   const [tickers, setTickers] = useState<TickerItem[]>([]);
 
   const fetchTickers = async () => {

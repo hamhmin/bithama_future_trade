@@ -6,8 +6,10 @@ import { useQueryClient } from "@tanstack/react-query"; // 추가
 import { setQueryClient } from "@/store/useFutureStore"; // 추가
 
 export default function SocketProvider() {
-  const { connectSocket, disconnectSocket, tradeData } = useFutureStore();
-  const price = tradeData ? parseFloat(tradeData.price).toFixed(2) : 0;
+  const { connectSocket, disconnectSocket } = useFutureStore();
+  const price = useFutureStore((state) =>
+    state.tradeData ? parseFloat(state.tradeData.price).toFixed(2) : "0",
+  );
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
   const queryClient = useQueryClient();
 
@@ -18,11 +20,12 @@ export default function SocketProvider() {
   }, [queryClient]);
 
   useEffect(() => {
-    document.title = !tradeData?.price
-      ? "0"
-      : `$${parseFloat(tradeData.price)
-          .toFixed(2)
-          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} | BTCUSDT with bithama`;
+    document.title =
+      price === "0"
+        ? "BITHAMA"
+        : `$${parseFloat(price)
+            .toFixed(2)
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} | BTCUSDT with bithama`;
   }, [price]);
 
   useEffect(() => {

@@ -12,9 +12,12 @@ type FundingData = {
 };
 
 export default function TradeInfo() {
-  const tradeData = useFutureStore((state) => state.tradeData);
+  // console.count("TradeInfo render");
+
   const authStatus = useFutureStore((state) => state.authStatus);
-  const currentPrice = tradeData ? parseFloat(tradeData.price) : 0;
+  const currentPrice = useFutureStore((state) =>
+    state.tradeData ? parseFloat(state.tradeData.price) : 0,
+  );
   const [funding, setFunding] = useState<FundingData | null>(null);
   const [countdown, setCountdown] = useState("");
 
