@@ -164,6 +164,7 @@ function LeverageModal({
   const [leverage, setLeverage] = useState(position.leverage);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const setShouldRefresh = useFutureStore((state) => state.setShouldRefresh);
 
   const QUICK_VALUES = [25, 50, 75, 100];
   const minLeverage =
@@ -207,6 +208,7 @@ function LeverageModal({
         // ----------------------------------
 
         toast.success("레버리지 변경 완료!");
+        setShouldRefresh(true); // 추가
 
         onSuccess();
         onClose();
