@@ -189,7 +189,7 @@ export default function GuestModal({
                 setMode("select");
                 setMessage("");
               }}
-              className="text-gray-500 text-xs hover:text-gray-300 text-left"
+              className="text-gray-500 text-xs hover:text-gray-300 text-left w-fit"
             >
               ← 뒤로
             </button>
@@ -233,7 +233,7 @@ export default function GuestModal({
                 setMode("select");
                 setMessage("");
               }}
-              className="text-gray-500 text-xs hover:text-gray-300 text-left"
+              className="text-gray-500 text-xs hover:text-gray-300 text-left w-fit"
             >
               ← 뒤로
             </button>
