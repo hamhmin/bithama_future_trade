@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import ShareCard from "./ShareCard";
 import toast from "react-hot-toast";
+import LoadingDots from "@/component/common/LoadingDots";
 
 type Position = {
   id: number;
@@ -641,9 +642,15 @@ export default function PositionTable({
                     <button
                       onClick={() => onClose(pos.id)}
                       disabled={loading}
-                      className="px-2 py-1 rounded text-xs bg-gray-700 hover:bg-red-600 text-white transition-colors"
+                      className="px-2 py-1 rounded text-xs bg-gray-700 hover:bg-red-600 text-white transition-colors min-w-[36px]"
                     >
-                      청산
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <LoadingDots size="xs" color="white" />
+                        </div>
+                      ) : (
+                        "청산"
+                      )}
                     </button>
                   </div>
                 </td>

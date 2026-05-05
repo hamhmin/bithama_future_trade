@@ -28,6 +28,9 @@ export default function OrderPanel() {
   const selectedPrice = useFutureStore((state) => state.selectedPrice);
   const setSelectedPrice = useFutureStore((state) => state.setSelectedPrice);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [hasSidePosition, setHasSidePosition] = useState(false);
   const [side, setSide] = useState<Side>("long");
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [price, setPrice] = useState("");
@@ -80,8 +83,12 @@ export default function OrderPanel() {
     return 0;
   }, [executionPrice, size, marginType, side, leverage]);
 
-  const fetchPosition = async () => {
-    setFetchLoading(true);
+  const fetchPosition = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setFetchLoading(true);
+    }
 
     try {
       const [posRes, ordRes, meRes] = await Promise.all([
@@ -102,6 +109,7 @@ export default function OrderPanel() {
         const existing = positions.find((p: any) => p.side === side);
         setOpenPosition(existing ?? null);
         setMarginTypeLocked(positions.length > 0 || orders.length > 0);
+        setHasSidePosition(!!existing);
 
         // 포지션 있으면 현재 레버리지로 동기화 및 로컬스토리지 업데이트
         if (existing) {
@@ -126,6 +134,7 @@ export default function OrderPanel() {
     } catch {
     } finally {
       setFetchLoading(false); // 완료 시 해제
+      setRefreshing(false);
     }
   };
 
@@ -178,7 +187,7 @@ export default function OrderPanel() {
   // shouldRefresh 감지
   useEffect(() => {
     if (!shouldRefresh || authStatus !== "logged-in") return;
-    fetchPosition();
+    fetchPosition(true);
   }, [shouldRefresh]);
 
   const handleMarginTypeChange = async (type: MarginType) => {
@@ -255,6 +264,7 @@ export default function OrderPanel() {
         marginType={marginType}
         leverage={leverage}
         marginTypeLocked={marginTypeLocked || fetchLoading}
+        hasSidePosition={hasSidePosition}
         fetchLoading={fetchLoading}
         isGuest={authStatus === "guest"}
         onMarginClick={() => {

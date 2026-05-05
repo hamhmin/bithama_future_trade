@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import LoadingDots from "@/component/common/LoadingDots";
 
 type OrderType = "market" | "limit";
 type Side = "long" | "short";
@@ -181,7 +182,7 @@ export default function OrderForm({
       </div>
 
       {/* 메시지 */}
-      {message && (
+      {/* {message && (
         <div
           className={`text-xs text-center py-0.5 rounded ${
             message.includes("완료") || message.includes("!")
@@ -191,7 +192,7 @@ export default function OrderForm({
         >
           {message}
         </div>
-      )}
+      )} */}
 
       {/* 주문 버튼 */}
       {authStatus === "guest" ? (
@@ -205,7 +206,7 @@ export default function OrderForm({
         <button
           onClick={onSubmit}
           disabled={loading || authStatus === "loading" || isInsufficient}
-          className={`w-full py-2.5 rounded font-bold text-white transition-colors ${
+          className={`w-full py-2.5 min-h-[42px] rounded font-bold text-white transition-colors ${
             isInsufficient
               ? "bg-gray-600 cursor-not-allowed"
               : loading || authStatus === "loading"
@@ -215,13 +216,17 @@ export default function OrderForm({
                   : "bg-red-600 hover:bg-red-500"
           }`}
         >
-          {isInsufficient
-            ? "잔고 부족"
-            : loading
-              ? "처리중..."
-              : side === "long"
-                ? "Long 주문"
-                : "Short 주문"}
+          {isInsufficient ? (
+            "잔고 부족"
+          ) : loading ? (
+            <div className="flex items-center justify-center">
+              <LoadingDots size="sm" color="white" />
+            </div>
+          ) : side === "long" ? (
+            "Long 주문"
+          ) : (
+            "Short 주문"
+          )}
         </button>
       )}
     </div>

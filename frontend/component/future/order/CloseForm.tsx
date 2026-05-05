@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import toast from "react-hot-toast";
+import LoadingDots from "@/component/common/LoadingDots";
 
 type Position = {
   id: number;
@@ -276,7 +277,13 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
               : "bg-red-600 hover:bg-red-500"
         }`}
       >
-        {loading ? "처리중..." : "포지션 청산"}
+        {loading ? (
+          <div className="flex items-center justify-center">
+            <LoadingDots size="sm" color="white" />
+          </div>
+        ) : (
+          "포지션 청산"
+        )}
       </button>
     </div>
   );
