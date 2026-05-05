@@ -3,6 +3,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createChart, CandlestickSeries } from "lightweight-charts";
 import { useFutureStore } from "@/store/useFutureStore";
+import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { fetchPositions, fetchOrders } from "@/lib/queries";
 
 const INTERVALS = [
   { label: "1m", seconds: 60 },
@@ -58,25 +61,23 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
   );
   const socket = useFutureStore((state) => state.socket);
 
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  // fetchLines 제거 → useQuery로 교체
+  const { data: positions = [] } = useQuery<Position[]>({
+    queryKey: QUERY_KEYS.positions,
+    queryFn: fetchPositions,
+    enabled: authStatus === "logged-in",
+    staleTime: 0,
+  });
 
-  const fetchLines = async () => {
-    try {
-      const [posRes, ordRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`, {
-          credentials: "include",
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/future/orders`, {
-          credentials: "include",
-        }),
-      ]);
-      if (posRes.ok) setPositions(await posRes.json());
-      if (ordRes.ok) setOrders(await ordRes.json());
-    } catch {}
-  };
+  const { data: orders = [] } = useQuery<Order[]>({
+    queryKey: QUERY_KEYS.orders,
+    queryFn: fetchOrders,
+    enabled: authStatus === "logged-in",
+    staleTime: 0,
+  });
+
+  // socket이 새로 연결되고 끊긴 시간이 있으면 캔들 보완
   useEffect(() => {
-    // socket이 새로 연결되고 끊긴 시간이 있으면 캔들 보완
     if (!socket || !lastDisconnectedAt || !candleSeriesRef.current) return;
 
     const fillGapCandles = async () => {
@@ -108,17 +109,6 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
 
     fillGapCandles();
   }, [socket]); // socket 객체가 바뀔 때(재연결) 실행
-
-  useEffect(() => {
-    if (authStatus !== "logged-in") {
-      setPositions([]);
-      setOrders([]);
-      return;
-    }
-    fetchLines();
-    const interval = setInterval(fetchLines, 5000);
-    return () => clearInterval(interval);
-  }, [authStatus]);
 
   // 차트 초기화
   useEffect(() => {

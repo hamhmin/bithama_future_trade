@@ -2,6 +2,9 @@
 
 import { useFutureStore } from "@/store/useFutureStore";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { fetchMe } from "@/lib/queries";
 
 type FundingData = {
   lastFundingRate: string;
@@ -14,10 +17,15 @@ export default function TradeInfo() {
   const currentPrice = tradeData ? parseFloat(tradeData.price) : 0;
   const [funding, setFunding] = useState<FundingData | null>(null);
   const [countdown, setCountdown] = useState("");
-  const [wallet, setWallet] = useState<{
-    balance: number;
-    locked: number;
-  } | null>(null);
+
+  const { data: userInfo } = useQuery({
+    queryKey: QUERY_KEYS.me,
+    queryFn: fetchMe,
+    enabled: authStatus === "logged-in",
+    staleTime: 0,
+  });
+
+  const wallet = userInfo?.wallet ?? null;
 
   // 펀딩비 데이터 가져오기
   useEffect(() => {
@@ -35,7 +43,6 @@ export default function TradeInfo() {
         console.error("펀딩비 로딩 실패");
       }
     };
-
     fetchFunding();
     const interval = setInterval(fetchFunding, 30000); // 30초마다 갱신
     return () => clearInterval(interval);
@@ -44,53 +51,22 @@ export default function TradeInfo() {
   // 펀딩비 카운트다운
   useEffect(() => {
     if (!funding) return;
-
     const timer = setInterval(() => {
       const now = Date.now();
       const diff = funding.nextFundingTime - now;
-
       if (diff <= 0) {
         setCountdown("00:00:00");
         return;
       }
-
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
-
       setCountdown(
         `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
       );
     }, 1000);
-
     return () => clearInterval(timer);
   }, [funding]);
-
-  // 내 지갑 정보 가져오기
-  useEffect(() => {
-    if (authStatus !== "logged-in") {
-      setWallet(null);
-      return;
-    }
-
-    const fetchWallet = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
-          { credentials: "include" },
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        setWallet(data.wallet);
-      } catch {
-        console.error("지갑 로딩 실패");
-      }
-    };
-
-    fetchWallet();
-    const interval = setInterval(fetchWallet, 5000);
-    return () => clearInterval(interval);
-  }, [authStatus]);
 
   const fundingRate = funding
     ? (parseFloat(funding.lastFundingRate) * 100).toFixed(4)
@@ -132,9 +108,7 @@ export default function TradeInfo() {
         <div className="flex justify-between">
           <span className="text-gray-400">현재 펀딩비율</span>
           <span
-            className={`font-bold ${
-              isFundingPositive ? "text-green-400" : "text-red-400"
-            }`}
+            className={`font-bold ${isFundingPositive ? "text-green-400" : "text-red-400"}`}
           >
             {isFundingPositive ? "+" : ""}
             {fundingRate}%

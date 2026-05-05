@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFutureStore } from "@/store/useFutureStore";
 import GuestModal from "../common/GuestModal";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { fetchMe } from "@/lib/queries";
 
 type TickerData = {
   lastPrice: string;
@@ -14,34 +17,34 @@ type TickerData = {
   volume: string;
 };
 
-type UserInfo = {
-  nickname: string;
-  wallet: {
-    balance: number;
-    locked: number;
-  };
-};
-
 export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const authStatus = useFutureStore((state) => state.authStatus);
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
   const tradeFromSocket = useFutureStore((state) => state.tradeData);
 
   const tradeData = tradeFromSocket ? tradeFromSocket : initialTrade;
-
   const currentPrice = tradeData ? parseFloat(tradeData.price) : 0;
+
   const [ticker, setTicker] = useState<TickerData | null>(null);
   const [prevPrice, setPrevPrice] = useState(0);
   const [priceUp, setPriceUp] = useState(true);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"select" | "login" | "register">(
     "select",
   );
-  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
 
-  // 24시간 티커 가져오기
+  const isLoggedIn = authStatus === "logged-in";
+
+  // me 쿼리 (OrderPanel과 캐시 공유)
+  const { data: userInfo } = useQuery({
+    queryKey: QUERY_KEYS.me,
+    queryFn: fetchMe,
+    enabled: isLoggedIn,
+  });
+
+  // 24시간 티커
   useEffect(() => {
     const fetchTicker = async () => {
       try {
@@ -58,32 +61,8 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
     const interval = setInterval(fetchTicker, 10000);
     return () => clearInterval(interval);
   }, []);
-  const fetchUser = useCallback(async () => {
-    if (authStatus !== "logged-in") return;
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
-        {
-          credentials: "include",
-        },
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      setUserInfo(data);
-    } catch {}
-  }, [authStatus]);
 
-  // 유저 정보 가져오기
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
-  // shouldRefresh 감지 시 유저 정보 갱신
-  useEffect(() => {
-    if (!shouldRefresh) return;
-    fetchUser();
-  }, [shouldRefresh]);
-  // 현재가 등락 방향 감지
-
+  // 현재가 등락 감지
   useEffect(() => {
     if (currentPrice && prevPrice) {
       setPriceUp(currentPrice >= prevPrice);
@@ -98,7 +77,7 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
         credentials: "include",
       });
       setAuthStatus("guest");
-      setUserInfo(null);
+      queryClient.clear(); // 로그아웃 시 모든 캐시 초기화
       router.refresh();
     } catch {}
   };
@@ -108,14 +87,12 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
 
   return (
     <div className="w-full h-full flex items-center justify-between px-4 text-sm">
-      {/* ───── 데스크탑 레이아웃 (lg 이상) ───── */}
+      {/* 데스크탑 */}
       <div className="hidden lg:flex items-center gap-6 w-full">
-        {/* 심볼 */}
         <div className="flex items-center gap-2">
           <span className="text-white font-bold text-base">BTCUSDT</span>
           <span className="text-gray-500 text-xs">무기한</span>
         </div>
-        {/* 현재가 */}
         <div className="flex flex-col">
           <span
             className={`font-bold text-lg transition-colors ${priceUp ? "text-green-400" : "text-red-400"}`}
@@ -153,9 +130,8 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
             BTC
           </span>
         </div>
-        {/* 우측 */}
         <div className="ml-auto flex items-center gap-3">
-          {authStatus === "logged-in" && userInfo ? (
+          {isLoggedIn && userInfo ? (
             <>
               <div className="flex flex-col items-end">
                 <span className="text-gray-500 text-xs">가용 잔고</span>
@@ -197,9 +173,8 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
         </div>
       </div>
 
-      {/* ───── 모바일 레이아웃 (lg 미만) ───── */}
+      {/* 모바일 */}
       <div className="flex lg:hidden flex-col w-full py-1 gap-0.5">
-        {/* 1행: 심볼 + 현재가 + 등락률 + 우측버튼 */}
         <div className="flex items-center gap-2">
           <Link href="/" className="text-blue-400 font-bold text-sm shrink-0">
             BITHAMA
@@ -216,10 +191,8 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
             {isPositive ? "+" : ""}
             {changePercent.toFixed(2)}%
           </span>
-
-          {/* 우측 버튼 */}
           <div className="ml-auto flex items-center gap-1 shrink-0">
-            {authStatus === "logged-in" && userInfo ? (
+            {isLoggedIn && userInfo ? (
               <button
                 onClick={handleLogout}
                 className="px-2 py-0.5 rounded text-[10px] text-gray-400 border border-gray-700"
@@ -227,30 +200,18 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
                 로그아웃
               </button>
             ) : authStatus === "guest" ? (
-              <>
-                <button
-                  onClick={() => {
-                    setModalMode("login");
-                    setShowModal(true);
-                  }}
-                  className="px-2 py-0.5 rounded text-[10px] text-white bg-blue-600"
-                >
-                  로그인
-                </button>
-                {/* <button
-                  onClick={() => {
-                    setShowModal(true);
-                  }}
-                  className="px-2 py-0.5 rounded text-[10px] text-gray-300 border border-gray-700"
-                >
-                  회원가입
-                </button> */}
-              </>
+              <button
+                onClick={() => {
+                  setModalMode("login");
+                  setShowModal(true);
+                }}
+                className="px-2 py-0.5 rounded text-[10px] text-white bg-blue-600"
+              >
+                로그인
+              </button>
             ) : null}
           </div>
         </div>
-
-        {/* 2행: BTCUSDT + 고가 / 저가 / 거래량 / 잔고 */}
         <div className="flex items-center gap-3 text-[10px]">
           <span className="text-white font-bold shrink-0">BTCUSDT</span>
           <span className="text-gray-500">
@@ -275,7 +236,7 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
                 : "-"}
             </span>
           </span>
-          {authStatus === "logged-in" && userInfo && (
+          {isLoggedIn && userInfo && (
             <span className="ml-auto text-gray-500">
               잔고{" "}
               <span className="text-white font-bold">
@@ -286,13 +247,7 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
         </div>
       </div>
 
-      {/* 모달 */}
-      {showModal && (
-        <GuestModal
-          onClose={() => setShowModal(false)}
-          // initialMode={modalMode}
-        />
-      )}
+      {showModal && <GuestModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }

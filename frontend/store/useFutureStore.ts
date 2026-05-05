@@ -1,6 +1,21 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 
+import { QueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+// store 외부에 queryClient 인스턴스
+let _queryClient: QueryClient | null = null;
+export const setQueryClient = (client: QueryClient) => {
+  _queryClient = client;
+};
+const invalidateAll = () => {
+  if (!_queryClient) return;
+  _queryClient.invalidateQueries({ queryKey: QUERY_KEYS.positions });
+  _queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders });
+  _queryClient.invalidateQueries({ queryKey: QUERY_KEYS.assets });
+  _queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
+};
+
 type AuthStatus = "loading" | "guest" | "logged-in";
 
 interface TradeData {
@@ -135,16 +150,19 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
       if (data.type === "filled") {
         toast.success(data.message ?? "주문 체결!");
         set({ shouldRefresh: true });
+        invalidateAll();
         return;
       }
       if (data.type === "liquidated") {
         toast.error(data.message ?? "포지션이 강제청산됐어요!");
         set({ shouldRefresh: true });
+        invalidateAll();
         return;
       }
       if (data.type === "ordered") {
         toast.success(data.message ?? "주문 등록!");
         set({ shouldRefresh: true });
+        invalidateAll();
         return;
       }
       if (data.type === "funding") {
@@ -152,6 +170,7 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
           icon: "💰",
         });
         set({ shouldRefresh: true });
+        invalidateAll();
         return;
       }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useFutureStore } from "@/store/useFutureStore";
+import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { fetchAssets } from "@/lib/queries";
 
 type Assets = {
   balance: number;
@@ -13,34 +14,13 @@ type Assets = {
 };
 
 export default function AssetsTab() {
-  const [assets, setAssets] = useState<Assets | null>(null);
-  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
+  const { data: assets, isLoading } = useQuery<Assets>({
+    queryKey: QUERY_KEYS.assets,
+    queryFn: fetchAssets,
+    staleTime: 0,
+  });
 
-  const fetchAssets = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/assets`,
-        { credentials: "include" },
-      );
-      if (!res.ok) return;
-      setAssets(await res.json());
-    } catch {
-      console.error("자산 로딩 실패");
-    }
-  };
-
-  useEffect(() => {
-    fetchAssets();
-    const interval = setInterval(fetchAssets, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!shouldRefresh) return;
-    fetchAssets();
-  }, [shouldRefresh]);
-
-  if (!assets) {
+  if (isLoading || !assets) {
     return (
       <div className="flex items-center justify-center h-24">
         <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />

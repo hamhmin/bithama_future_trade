@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import PositionTable from "./position/PositionTable";
 import OrderTable from "./position/OrderTable";
 import HistoryTable from "./position/HistoryTable";
@@ -10,6 +10,9 @@ import AssetsTab from "./position/AssetsTab";
 import PositionHistoryTab from "./position/PositionHistoryTab";
 import TransactionHistoryTab from "./position/TransactionHistoryTab";
 import toast from "react-hot-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { fetchPositions, fetchOrders, fetchAssets } from "@/lib/queries";
 
 type Position = {
   id: number;
@@ -48,49 +51,28 @@ type Tab =
   | "transaction"
   | "assets";
 
-type AuthStatus = "loading" | "guest" | "logged-in";
-
 export default function PositionPanel() {
+  const queryClient = useQueryClient();
   const authStatus = useFutureStore((state) => state.authStatus);
-  const shouldRefresh = useFutureStore((state) => state.shouldRefresh);
-  const setShouldRefresh = useFutureStore((state) => state.setShouldRefresh);
+  const isLoggedIn = authStatus === "logged-in";
 
   const [tab, setTab] = useState<Tab>("positions");
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [history, setHistory] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [positionLoading, setPositionLoading] = useState(true);
+  const { data: positions = [], isLoading: positionLoading } = useQuery<
+    Position[]
+  >({
+    queryKey: QUERY_KEYS.positions,
+    queryFn: fetchPositions,
+    enabled: isLoggedIn,
+  });
 
-  const fetchPositions = async () => {
-    setPositionLoading(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
-        {
-          credentials: "include",
-        },
-      );
-      setPositions(await res.json());
-    } catch {
-      console.error("포지션 로딩 실패");
-    } finally {
-      setPositionLoading(false);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/orders`,
-        { credentials: "include" },
-      );
-      setOrders(await res.json());
-    } catch {
-      console.error("주문 로딩 실패");
-    }
-  };
+  const { data: orders = [] } = useQuery<Order[]>({
+    queryKey: QUERY_KEYS.orders,
+    queryFn: fetchOrders,
+    enabled: isLoggedIn,
+  });
 
   const fetchHistory = async () => {
     try {
@@ -103,23 +85,6 @@ export default function PositionPanel() {
       console.error("거래내역 로딩 실패");
     }
   };
-
-  useEffect(() => {
-    if (authStatus !== "logged-in") return;
-
-    // 탭 상관없이 항상 둘 다 fetch
-    fetchPositions();
-    fetchOrders();
-    if (tab === "history") fetchHistory();
-  }, [tab, authStatus]);
-
-  useEffect(() => {
-    if (!shouldRefresh) return;
-    fetchPositions();
-    fetchOrders();
-    fetchHistory();
-    setShouldRefresh(false);
-  }, [shouldRefresh]);
 
   const closePosition = async (positionId: number) => {
     if (!confirm("포지션을 청산할까요?")) return;
@@ -137,7 +102,6 @@ export default function PositionPanel() {
       const data = await res.json();
       if (res.ok) {
         toast.success(data.message);
-        fetchPositions();
       } else {
         toast.error(data.message);
       }
@@ -158,14 +122,21 @@ export default function PositionPanel() {
       const data = await res.json();
       if (res.ok) {
         toast.success(data.message);
-        fetchOrders();
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders });
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
       } else {
         toast.error(data.message);
       }
-      fetchOrders();
     } catch {
       alert("취소 실패");
     }
+  };
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.positions });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.assets });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
   };
 
   const TAB_LABELS: { key: Tab; label: string }[] = [
@@ -178,13 +149,16 @@ export default function PositionPanel() {
   ];
 
   return (
-    <div className="w-full h-[340px] md:h-full flex flex-col text-sm relative ">
+    <div className="w-full h-[340px] md:h-full flex flex-col text-sm relative">
       {/* 탭 */}
       <div className="flex border-b border-gray-700">
         {TAB_LABELS.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => {
+              setTab(key);
+              if (key === "history") fetchHistory();
+            }}
             className={`px-4 py-2 text-xs transition-colors ${
               tab === key
                 ? "text-white border-b-2 border-blue-500"
@@ -195,7 +169,6 @@ export default function PositionPanel() {
           </button>
         ))}
       </div>
-
       {/* 콘텐츠 */}
       <div className="flex-1 overflow-auto">
         {/* 로딩 */}
@@ -204,7 +177,6 @@ export default function PositionPanel() {
             <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
-
         {/* 비로그인 */}
         {authStatus === "guest" && (
           <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -229,7 +201,7 @@ export default function PositionPanel() {
         )}
 
         {/* 로그인 상태 */}
-        {authStatus === "logged-in" && (
+        {isLoggedIn && (
           <>
             {tab === "positions" &&
               (positionLoading ? (
@@ -239,9 +211,9 @@ export default function PositionPanel() {
               ) : (
                 <PositionTable
                   positions={positions}
-                  loading={positionLoading}
+                  loading={loading}
                   onClose={closePosition}
-                  onRefresh={fetchPositions}
+                  onRefresh={handleRefresh}
                 />
               ))}
             {tab === "orders" && (

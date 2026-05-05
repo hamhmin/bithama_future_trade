@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import toast from "react-hot-toast";
 import LoadingDots from "@/component/common/LoadingDots";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { fetchPositions } from "@/lib/queries";
 
 type Position = {
   id: number;
@@ -17,11 +20,19 @@ type Position = {
 type OrderType = "market" | "limit";
 
 export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
+  const queryClient = useQueryClient();
   const currentPrice = useFutureStore((state) =>
     state.tradeData ? parseFloat(state.tradeData.price) : 0,
   );
+  const authStatus = useFutureStore((state) => state.authStatus);
 
-  const [positions, setPositions] = useState<Position[]>([]);
+  const { data: positions = [] } = useQuery<Position[]>({
+    queryKey: QUERY_KEYS.positions,
+    queryFn: fetchPositions,
+    enabled: authStatus === "logged-in",
+    staleTime: 0,
+  });
+
   const [selectedPos, setSelectedPos] = useState<Position | null>(null);
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [price, setPrice] = useState("");
@@ -30,47 +41,31 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const fetchPositions = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
-        {
-          credentials: "include",
-        },
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      setPositions(data);
-      if (data.length > 0 && !selectedPos) {
-        setSelectedPos(data[0]);
-      }
-    } catch {}
-  };
-
-  useEffect(() => {
-    fetchPositions();
-  }, []);
+  // positions 바뀌면 selectedPos 자동 동기화
+  const currentSelectedPos = selectedPos
+    ? (positions.find((p) => p.id === selectedPos.id) ?? positions[0] ?? null)
+    : (positions[0] ?? null);
 
   // 예상 손익 계산
   const closePrice =
     orderType === "market" ? currentPrice : parseFloat(price) || 0;
   const closeSize = parseFloat(size) || 0;
   const pnl =
-    selectedPos && closePrice && closeSize
-      ? selectedPos.side === "long"
-        ? (closePrice - selectedPos.entryPrice) * closeSize
-        : (selectedPos.entryPrice - closePrice) * closeSize
+    currentSelectedPos && closePrice && closeSize
+      ? currentSelectedPos.side === "long"
+        ? (closePrice - currentSelectedPos.entryPrice) * closeSize
+        : (currentSelectedPos.entryPrice - closePrice) * closeSize
       : 0;
 
   const handlePercent = (percent: number) => {
-    if (!selectedPos) return;
+    if (!currentSelectedPos) return;
     setSelectedPercent(percent);
-    const newSize = (selectedPos.size * percent) / 100;
+    const newSize = (currentSelectedPos.size * percent) / 100;
     setSize(newSize.toFixed(4));
   };
 
   const handleSubmit = async () => {
-    if (!selectedPos) {
+    if (!currentSelectedPos) {
       setMessage("청산할 포지션을 선택해주세요.");
       return;
     }
@@ -88,7 +83,7 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${selectedPos.id}/close`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${currentSelectedPos.id}/close`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -104,32 +99,15 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.message);
-
         setMessage(data.message);
       } else {
         toast.success(data.message);
         setSize("");
         setPrice("");
         setSelectedPercent(null);
+        setSelectedPos(null);
+        // 소켓 filled 이벤트가 invalidateAll 처리하므로 여기서 중복 호출 안 함
         onSuccess();
-
-        // 포지션 재fetch 후 selectedPos 업데이트
-        const posRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/future/positions`,
-          {
-            credentials: "include",
-          },
-        );
-        if (posRes.ok) {
-          const positions = await posRes.json();
-          const updated = positions.find((p: any) => p.id === selectedPos?.id);
-          if (updated) {
-            setSelectedPos(updated); // 남은 수량으로 업데이트
-          } else {
-            setSelectedPos(positions[0] ?? null); // 전체 청산됐으면 다른 포지션
-          }
-          setPositions(positions);
-        }
       }
     } catch {
       setMessage("서버 오류");
@@ -159,7 +137,7 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
               setSelectedPercent(null);
             }}
             className={`flex-1 py-1 rounded text-xs font-bold transition-colors ${
-              selectedPos?.id === pos.id
+              currentSelectedPos?.id === pos.id
                 ? pos.side === "long"
                   ? "bg-green-600 text-white"
                   : "bg-red-600 text-white"
@@ -206,7 +184,9 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="flex flex-col gap-1">
         <div className="flex justify-between text-xs text-gray-400">
           <label>청산 수량 (BTC)</label>
-          {selectedPos && <span>보유: {selectedPos.size} BTC</span>}
+          {currentSelectedPos && (
+            <span>보유: {currentSelectedPos.size} BTC</span>
+          )}
         </div>
         <input
           type="number"
@@ -238,7 +218,7 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
 
       {/* 예상 손익 */}
-      {selectedPos && closeSize > 0 && closePrice > 0 && (
+      {currentSelectedPos && closeSize > 0 && closePrice > 0 && (
         <div className="flex flex-col gap-1 bg-gray-800 rounded px-3 py-2 text-xs text-gray-400">
           <div className="flex justify-between">
             <span>청산 수량</span>
@@ -268,11 +248,11 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
       {/* 청산 버튼 */}
       <button
         onClick={handleSubmit}
-        disabled={loading || !selectedPos}
+        disabled={loading || !currentSelectedPos}
         className={`w-full py-3 rounded font-bold text-white transition-colors ${
-          loading || !selectedPos
+          loading || !currentSelectedPos
             ? "bg-gray-600 cursor-not-allowed"
-            : selectedPos?.side === "long"
+            : currentSelectedPos?.side === "long"
               ? "bg-green-600 hover:bg-green-500"
               : "bg-red-600 hover:bg-red-500"
         }`}

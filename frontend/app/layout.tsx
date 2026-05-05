@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import QueryProvider from "@/component/common/QueryProvider";
+
 import "./globals.css";
 import Link from "next/link";
 import { Toaster } from "react-hot-toast";
@@ -56,36 +56,33 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
-        <div className="hidden">
-          <Link href={"/"}>index</Link>
-          <br />
-          <Link href={"/future"}>future</Link>
-        </div>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "#1f2937",
-              color: "#fff",
-              border: "1px solid #374151",
-              fontSize: "13px",
-            },
-            success: {
-              iconTheme: {
-                primary: "#22c55e",
-                secondary: "#fff",
+        <QueryProvider>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              style: {
+                background: "#1f2937",
+                color: "#fff",
+                border: "1px solid #374151",
+                fontSize: "13px",
               },
-            },
-            error: {
-              iconTheme: {
-                primary: "#ef4444",
-                secondary: "#fff",
+              success: {
+                iconTheme: {
+                  primary: "#22c55e",
+                  secondary: "#fff",
+                },
               },
-            },
-            duration: 3000,
-          }}
-        />
-        {children}
+              error: {
+                iconTheme: {
+                  primary: "#ef4444",
+                  secondary: "#fff",
+                },
+              },
+              duration: 3000,
+            }}
+          />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

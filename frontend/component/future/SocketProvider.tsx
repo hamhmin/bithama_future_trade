@@ -2,11 +2,20 @@
 
 import { useEffect } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
+import { useQueryClient } from "@tanstack/react-query"; // 추가
+import { setQueryClient } from "@/store/useFutureStore"; // 추가
 
 export default function SocketProvider() {
   const { connectSocket, disconnectSocket, tradeData } = useFutureStore();
   const price = tradeData ? parseFloat(tradeData.price).toFixed(2) : 0;
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    console.log("setQueryClient 호출:", queryClient);
+
+    setQueryClient(queryClient);
+  }, [queryClient]);
 
   useEffect(() => {
     document.title = !tradeData?.price
