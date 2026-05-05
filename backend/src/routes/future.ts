@@ -198,16 +198,6 @@ router.post(
               ).toFixed(2),
             );
 
-            console.log("합산 계산:", {
-              existing: {
-                entryPrice: existing.entryPrice,
-                size: existing.size,
-              },
-              new: { executionPrice, size },
-              newEntryPrice,
-              newSize,
-            });
-
             position = await tx.position.update({
               where: { id: existing.id },
               data: {
