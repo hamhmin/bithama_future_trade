@@ -19,7 +19,13 @@ type Position = {
 
 type OrderType = "market" | "limit";
 
-export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
+export default function CloseForm({
+  onSuccess,
+  closeBtnRef,
+}: {
+  onSuccess: () => void;
+  closeBtnRef?: React.RefObject<HTMLButtonElement | null>;
+}) {
   const queryClient = useQueryClient();
   const currentPrice = useFutureStore((state) =>
     state.tradeData ? parseFloat(state.tradeData.price) : 0,
@@ -247,6 +253,7 @@ export default function CloseForm({ onSuccess }: { onSuccess: () => void }) {
 
       {/* 청산 버튼 */}
       <button
+        ref={closeBtnRef}
         onClick={handleSubmit}
         disabled={loading || !currentSelectedPos}
         className={`w-full py-3 rounded font-bold text-white transition-colors ${

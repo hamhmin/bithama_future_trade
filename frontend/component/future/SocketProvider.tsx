@@ -14,7 +14,7 @@ export default function SocketProvider() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    console.log("setQueryClient 호출:", queryClient);
+    // console.log("setQueryClient 호출:", queryClient);
 
     setQueryClient(queryClient);
   }, [queryClient]);

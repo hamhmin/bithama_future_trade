@@ -23,6 +23,9 @@ export default function OrderForm({
   authStatus,
   takeProfit,
   stopLoss,
+  sizeAreaRef,
+  sizeInputRef,
+  submitBtnRef,
   onTakeProfitChange,
   onStopLossChange,
   onPriceChange,
@@ -45,6 +48,10 @@ export default function OrderForm({
   authStatus: AuthStatus;
   takeProfit: string;
   stopLoss: string;
+  sizeInputRef?: React.RefObject<HTMLInputElement | null>;
+  submitBtnRef?: React.RefObject<HTMLButtonElement | null>;
+  sizeAreaRef?: React.RefObject<HTMLDivElement | null>;
+
   onTakeProfitChange: (v: string) => void;
   onStopLossChange: (v: string) => void;
   onPriceChange: (v: string) => void;
@@ -82,21 +89,54 @@ export default function OrderForm({
         </div>
       )}
 
-      {/* 수량 인풋 */}
-      <div className="flex flex-col gap-0.5">
-        <label className="text-gray-400 text-xs">수량 (BTC)</label>
-        <input
-          type="number"
-          value={size}
-          onChange={(e) => {
-            onSizeChange(e.target.value);
-            setSelectedPercent(null);
-          }}
-          placeholder="0.000"
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500"
-        />
-      </div>
+      <div ref={sizeAreaRef} className="flex flex-col gap-2">
+        {/* 수량 인풋 */}
+        <div className="flex flex-col gap-0.5">
+          <label className="text-gray-400 text-xs">수량 (BTC)</label>
+          <input
+            type="number"
+            value={size}
+            ref={sizeInputRef}
+            onChange={(e) => {
+              onSizeChange(e.target.value);
+              setSelectedPercent(null);
+            }}
+            placeholder="0.000"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500"
+          />
+        </div>
+        {/* 25/50/75/100% 프리셋 */}
+        <div className="flex gap-1">
+          {[25, 50, 75, 100].map((percent) => (
+            <button
+              key={percent}
+              onClick={() => {
+                if (!wallet || !executionPrice) return;
+                const TAKER_FEE_RATE = 0.0005;
 
+                // 수수료 포함 최대 수량 계산
+                // margin + fee = balance
+                // (price * size / leverage) + (price * size * feeRate) = balance
+                // price * size * (1/leverage + feeRate) = balance
+                const maxSize =
+                  wallet.balance /
+                  (executionPrice * (1 / leverage + TAKER_FEE_RATE));
+                const safeSize = Math.floor(maxSize * 10000) / 10000;
+
+                onSizeChange(((safeSize * percent) / 100).toFixed(4));
+                setSelectedPercent(percent);
+              }}
+              className={`flex-1 py-1 rounded text-xs transition-colors cursor-pointer ${
+                selectedPercent === percent
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700"
+              }`}
+            >
+              {percent}%
+            </button>
+          ))}
+        </div>
+      </div>
       {/* TP/SL — 무조건 flex-row, 인풋 높이 줄이기 */}
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center justify-between text-xs text-gray-400">
@@ -125,38 +165,6 @@ export default function OrderForm({
             />
           </div>
         </div>
-      </div>
-
-      {/* 25/50/75/100% 프리셋 */}
-      <div className="flex gap-1">
-        {[25, 50, 75, 100].map((percent) => (
-          <button
-            key={percent}
-            onClick={() => {
-              if (!wallet || !executionPrice) return;
-              const TAKER_FEE_RATE = 0.0005;
-
-              // 수수료 포함 최대 수량 계산
-              // margin + fee = balance
-              // (price * size / leverage) + (price * size * feeRate) = balance
-              // price * size * (1/leverage + feeRate) = balance
-              const maxSize =
-                wallet.balance /
-                (executionPrice * (1 / leverage + TAKER_FEE_RATE));
-              const safeSize = Math.floor(maxSize * 10000) / 10000;
-
-              onSizeChange(((safeSize * percent) / 100).toFixed(4));
-              setSelectedPercent(percent);
-            }}
-            className={`flex-1 py-1 rounded text-xs transition-colors cursor-pointer ${
-              selectedPercent === percent
-                ? "bg-blue-600 text-white"
-                : "text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700"
-            }`}
-          >
-            {percent}%
-          </button>
-        ))}
       </div>
 
       {/* 가용잔고/증거금/예상청산가 — 패딩 줄이기 */}
@@ -204,6 +212,7 @@ export default function OrderForm({
         </button>
       ) : (
         <button
+          ref={submitBtnRef}
           onClick={onSubmit}
           disabled={loading || authStatus === "loading" || isInsufficient}
           className={`w-full py-2.5 min-h-[42px] rounded font-bold text-white transition-colors ${

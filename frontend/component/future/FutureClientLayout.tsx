@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FutureHeader from "@/component/future/FutureHeader";
 import PositionPanel from "@/component/future/PositionPanel";
 import TradeInfo from "@/component/future/TradeInfo";
@@ -24,6 +24,7 @@ export default function FutureClientLayout({
 }) {
   const [chartOpen, setChartOpen] = useState(false);
   const isDesktop = useIsDesktop();
+  const positionPanelRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
@@ -49,9 +50,12 @@ export default function FutureClientLayout({
             <OrderBook initialDepth={depth} initialTrade={trade} />
           </div>
           <div className="col-span-3">
-            <OrderPanel />
+            <OrderPanel positionPanelRef={positionPanelRef} />
           </div>
-          <div className="col-span-9 border-t border-r border-gray-700">
+          <div
+            className="col-span-9 border-t border-r border-gray-700"
+            ref={positionPanelRef}
+          >
             <PositionPanel />
           </div>
           <div className="col-span-3 border-t border-gray-700">
@@ -70,7 +74,7 @@ export default function FutureClientLayout({
           <div className="flex border-b border-gray-700">
             {/* 좌: 주문패널 */}
             <div className="flex-1 min-w-0 border-r border-gray-700 overflow-y-auto">
-              <OrderPanel />
+              <OrderPanel positionPanelRef={positionPanelRef} />
             </div>
             {/* 우: 호가창 */}
             <div className="w-44 shrink-0 overflow-hidden">
@@ -79,7 +83,7 @@ export default function FutureClientLayout({
           </div>
 
           {/* 하단 - 포지션패널 */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden" ref={positionPanelRef}>
             <PositionPanel />
           </div>
 

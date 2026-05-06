@@ -135,7 +135,7 @@ router.post("/logout", (req: Request, res: Response) => {
 router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId! },
-    select: { id: true, email: true, nickname: true },
+    select: { id: true, email: true, nickname: true, tutorialCompleted: true },
   });
 
   const wallet = await prisma.wallet.findUnique({
@@ -153,6 +153,17 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
       : null,
   });
 });
+router.patch(
+  "/tutorial-complete",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    await prisma.user.update({
+      where: { id: req.userId! },
+      data: { tutorialCompleted: true },
+    });
+    res.json({ message: "ok" });
+  },
+);
 
 // 닉네임 변경
 router.patch(

@@ -21,6 +21,8 @@ model User {
   orders           Order[]
   fundingHistories FundingHistory[]
   symbolSettings UserSymbolSetting[]
+  tutorialCompleted Boolean @default(false)
+
 }
 
 model Wallet {

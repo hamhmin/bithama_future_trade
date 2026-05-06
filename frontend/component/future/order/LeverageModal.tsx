@@ -6,12 +6,15 @@ export default function LeverageModal({
   leverage,
   minLeverage,
   openPosition,
+  modalRef,
   onClose,
   onChange,
 }: {
   leverage: number;
   minLeverage: number;
   openPosition: { leverage: number; marginType: string } | null;
+  modalRef?: React.RefObject<HTMLDivElement | null>;
+
   onClose: () => void;
   onChange: (v: number) => void;
 }) {
@@ -37,6 +40,7 @@ export default function LeverageModal({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="bg-gray-800 rounded-xl p-6 w-72 flex flex-col gap-5"
         onClick={(e) => e.stopPropagation()}
       >

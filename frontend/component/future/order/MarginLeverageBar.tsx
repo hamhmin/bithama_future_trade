@@ -11,6 +11,7 @@ export default function MarginLeverageBar({
   fetchLoading,
   isGuest,
   hasSidePosition,
+  leverageBtnRef,
   onMarginClick,
   onLeverageClick,
 }: {
@@ -20,6 +21,7 @@ export default function MarginLeverageBar({
   fetchLoading: boolean;
   isGuest: boolean;
   hasSidePosition: boolean;
+  leverageBtnRef?: React.RefObject<HTMLButtonElement | null>;
   onMarginClick: () => void;
   onLeverageClick: () => void;
 }) {
@@ -53,6 +55,7 @@ export default function MarginLeverageBar({
 
         {/* 레버리지 버튼 */}
         <button
+          ref={leverageBtnRef}
           onClick={() => {
             if (fetchLoading) return;
             onLeverageClick();

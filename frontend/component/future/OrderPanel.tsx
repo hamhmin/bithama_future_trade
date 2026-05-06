@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import GuestModal from "@/component/common/GuestModal";
 import MarginLeverageBar from "./order/MarginLeverageBar";
@@ -17,6 +17,11 @@ import {
   fetchMe,
   fetchSetting,
 } from "@/lib/queries";
+import { useTutorial } from "@/component/tutorial/useTutorial";
+import TutorialOverlay from "@/component/tutorial/TutorialOverlay";
+import { TUTORIAL_STEPS } from "@/component/tutorial/tutorialSteps";
+import TutorialCompleteModal from "@/component/tutorial/TutorialCompleteModal";
+import TutorialStartModal from "@/component/tutorial/TutorialStartModal";
 
 type OrderType = "market" | "limit";
 type Side = "long" | "short";
@@ -24,7 +29,11 @@ type MarginType = "isolated" | "cross";
 
 const MAINTENANCE_MARGIN_RATE = 0.005;
 
-export default function OrderPanel() {
+export default function OrderPanel({
+  positionPanelRef,
+}: {
+  positionPanelRef?: React.RefObject<HTMLDivElement | null>;
+}) {
   const queryClient = useQueryClient();
   const currentPrice = useFutureStore((state) =>
     state.tradeData ? parseFloat(state.tradeData.price) : 0,
@@ -75,6 +84,8 @@ export default function OrderPanel() {
     enabled: isLoggedIn,
   });
 
+  const tutorial = useTutorial(me?.tutorialCompleted);
+
   const { data: setting } = useQuery({
     queryKey: QUERY_KEYS.setting,
     queryFn: fetchSetting,
@@ -93,6 +104,23 @@ export default function OrderPanel() {
   const minLeverage =
     openPosition?.marginType === "isolated" ? openPosition.leverage : 1;
 
+  const [tutorialError, setTutorialError] = useState("");
+  const leverageBtnRef = useRef<HTMLButtonElement>(null);
+  const sizeInputRef = useRef<HTMLInputElement>(null);
+  const submitBtnRef = useRef<HTMLButtonElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const leverageModalRef = useRef<HTMLDivElement>(null);
+  const sizeAreaRef = useRef<HTMLDivElement>(null);
+
+  const tutorialRefs = {
+    leverageBtn: leverageBtnRef,
+    sizeInput: sizeInputRef,
+    leverageModal: leverageModalRef, // 추가
+    submitBtn: submitBtnRef,
+    sizeArea: sizeAreaRef, // 추가
+    closeBtn: closeBtnRef,
+    positionPanel: positionPanelRef ?? { current: null }, // 추가
+  };
   // 포지션 레버리지 동기화
   useEffect(() => {
     if (existing) {
@@ -183,6 +211,10 @@ export default function OrderPanel() {
       if (!res.ok) {
         toast.error(data.message ?? "주문 실패");
       } else {
+        if (tutorial.isActive && tutorial.step.id === "submit") {
+          tutorial.complete(); // 완료
+        }
+
         setMessage(data.message ?? "주문 완료!");
         setSize("");
         setPrice("");
@@ -219,10 +251,47 @@ export default function OrderPanel() {
     return 0;
   }, [executionPrice, size, marginType, side, leverage]);
 
+  const handleTutorialPrev = () => {
+    const prevStepId = TUTORIAL_STEPS[tutorial.currentStep - 1]?.id;
+
+    // 2단계에서 이전 → 모달 닫기
+    if (tutorial.step.id === "leverage_set") {
+      setShowLeverageModal(false);
+    }
+
+    // 3단계에서 이전 → 모달 열고 2단계로
+    if (tutorial.step.id === "size") {
+      setShowLeverageModal(true);
+    }
+
+    tutorial.prev();
+  };
+  const handleTutorialNext = () => {
+    if (tutorial.step.id === "size") {
+      if (!size || parseFloat(size) <= 0) {
+        setTutorialError(
+          "수량을 입력해주세요. 💡 25%/50%/75%/100% 버튼을 눌러보세요!",
+        );
+        return;
+      }
+      const requiredMargin = (executionPrice * parseFloat(size)) / leverage;
+      const fee = requiredMargin * 0.0005;
+      if (!wallet || wallet.balance < requiredMargin + fee) {
+        setTutorialError(
+          "잔고가 부족해요. 💡 25%/50%/75%/100% 버튼을 눌러보세요!",
+        );
+        return;
+      }
+      setTutorialError("");
+    }
+    tutorial.next();
+  };
+
   return (
     <div className="w-full h-full flex flex-col p-3 gap-3 text-sm">
       {/* 마진타입 + 레버리지 */}
       <MarginLeverageBar
+        leverageBtnRef={leverageBtnRef}
         marginType={marginType}
         leverage={leverage}
         marginTypeLocked={marginTypeLocked || fetchLoading}
@@ -241,6 +310,10 @@ export default function OrderPanel() {
             setShowModal(true);
             return;
           }
+          if (tutorial.isActive && tutorial.step.id === "leverage_open") {
+            tutorial.next(); // 2단계로
+          }
+
           setShowLeverageModal(true);
         }}
       />
@@ -327,6 +400,9 @@ export default function OrderPanel() {
             authStatus={authStatus}
             executionPrice={executionPrice}
             leverage={leverage}
+            sizeInputRef={sizeInputRef}
+            submitBtnRef={submitBtnRef}
+            sizeAreaRef={sizeAreaRef}
             onPriceChange={setPrice}
             onSizeChange={setSize}
             onSubmit={handleSubmit}
@@ -338,7 +414,7 @@ export default function OrderPanel() {
           />
         </>
       ) : (
-        <CloseForm onSuccess={handleRefresh} />
+        <CloseForm onSuccess={handleRefresh} closeBtnRef={closeBtnRef} />
       )}
 
       {/* 마진타입 모달 */}
@@ -353,6 +429,7 @@ export default function OrderPanel() {
       {/* 레버리지 모달 */}
       {showLeverageModal && (
         <LeverageModal
+          modalRef={leverageModalRef}
           leverage={leverage}
           minLeverage={minLeverage}
           openPosition={openPosition}
@@ -360,12 +437,40 @@ export default function OrderPanel() {
           onChange={(val: number) => {
             setLocalLeverage(val);
             localStorage.setItem("selected_leverage", val.toString());
+            if (tutorial.isActive && tutorial.step.id === "leverage_set") {
+              tutorial.next(); // 3단계로
+            }
           }}
         />
       )}
 
       {/* 게스트 모달 */}
       {showModal && <GuestModal onClose={() => setShowModal(false)} />}
+
+      {/* 튜토리얼 */}
+      <TutorialOverlay
+        isActive={tutorial.isActive}
+        step={tutorial.step}
+        onPrev={handleTutorialPrev}
+        currentStep={tutorial.currentStep}
+        totalSteps={tutorial.totalSteps}
+        refs={tutorialRefs}
+        onNext={handleTutorialNext}
+        errorMessage={tutorialError}
+        onSkip={tutorial.skip}
+        isLastStep={tutorial.currentStep === tutorial.totalSteps - 1}
+        showCompleteModal={tutorial.showCompleteModal}
+        onConfirm={tutorial.confirmComplete}
+      />
+      {/* 튜토리얼 완료모달 */}
+      {/* <TutorialCompleteModal onConfirm={tutorial.confirmComplete} /> */}
+      {/* 튜토리얼 시작모달 */}
+      {tutorial.showStartModal && (
+        <TutorialStartModal
+          onStart={tutorial.startTutorial}
+          onSkip={tutorial.skip}
+        />
+      )}
     </div>
   );
 }
