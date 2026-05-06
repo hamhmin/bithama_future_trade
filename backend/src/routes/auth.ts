@@ -254,12 +254,13 @@ router.get("/ticker", async (req, res) => {
       return res.json(tickerCache.data);
     }
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/ticker`,
+      "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT",
     );
     const data = await response.json();
     tickerCache = { data, updatedAt: Date.now() };
     res.json(data);
-  } catch {
+  } catch (err) {
+    console.error("티커 로딩 실패:", err);
     res.status(500).json({ message: "티커 로딩 실패" });
   }
 });
