@@ -237,10 +237,9 @@ export default function FutureClientLayout({
               </div>
             </div>
           )}
-
-          {showModal && <GuestModal onClose={() => setShowModal(false)} />}
         </div>
       )}
+      {showModal && <GuestModal onClose={() => setShowModal(false)} />}
     </>
   );
 }
