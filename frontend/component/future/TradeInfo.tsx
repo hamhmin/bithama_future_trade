@@ -4,7 +4,7 @@ import { useFutureStore } from "@/store/useFutureStore";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/queryKeys";
-import { fetchMe } from "@/lib/queries";
+import { fetchMe, fetchPositions } from "@/lib/queries";
 
 type FundingData = {
   lastFundingRate: string;
@@ -12,8 +12,6 @@ type FundingData = {
 };
 
 export default function TradeInfo() {
-  // console.count("TradeInfo render");
-
   const authStatus = useFutureStore((state) => state.authStatus);
   const currentPrice = useFutureStore((state) =>
     state.tradeData ? parseFloat(state.tradeData.price) : 0,
@@ -21,12 +19,31 @@ export default function TradeInfo() {
   const [funding, setFunding] = useState<FundingData | null>(null);
   const [countdown, setCountdown] = useState("");
 
+  const isLoggedIn = authStatus === "logged-in";
+
   const { data: userInfo } = useQuery({
     queryKey: QUERY_KEYS.me,
     queryFn: fetchMe,
-    enabled: authStatus === "logged-in",
+    enabled: isLoggedIn,
     staleTime: 0,
   });
+
+  const { data: positions = [] } = useQuery({
+    queryKey: QUERY_KEYS.positions,
+    queryFn: fetchPositions,
+    enabled: isLoggedIn,
+    staleTime: 0,
+  });
+
+  // 미실현 손익 계산
+  const unrealizedPnl = positions.reduce((sum: number, pos: any) => {
+    if (!currentPrice) return sum;
+    const pnl =
+      pos.side === "long"
+        ? (currentPrice - pos.entryPrice) * pos.size
+        : (pos.entryPrice - currentPrice) * pos.size;
+    return sum + pnl;
+  }, 0);
 
   const wallet = userInfo?.wallet ?? null;
 
@@ -79,7 +96,7 @@ export default function TradeInfo() {
     : true;
 
   return (
-    <div className="w-full h-full flex flex-col gap-3 p-3 text-xs">
+    <div className="w-full h-full flex flex-col gap-3 p-3 text-xs overflow-y-auto">
       {/* 내 자산 */}
       <div className="bg-gray-800 rounded-lg p-3 flex flex-col gap-2">
         <span className="text-gray-400 font-bold">내 자산</span>
@@ -99,10 +116,22 @@ export default function TradeInfo() {
           <span className="text-gray-400">총 자산</span>
           <span className="text-white">
             {wallet
-              ? `${(wallet.balance + wallet.locked).toFixed(2)} USDT`
+              ? `${(wallet.balance + wallet.locked + unrealizedPnl).toFixed(2)} USDT`
               : "-"}
           </span>
         </div>
+        {/* 미실현 손익 */}
+        {isLoggedIn && positions.length > 0 && (
+          <div className="flex justify-between border-t border-gray-700 pt-2 mt-1">
+            <span className="text-gray-400">미실현 손익</span>
+            <span
+              className={`font-bold ${unrealizedPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+            >
+              {unrealizedPnl >= 0 ? "+" : ""}
+              {unrealizedPnl.toFixed(2)} USDT
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 펀딩비 */}
