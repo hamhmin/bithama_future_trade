@@ -11,6 +11,8 @@ export default function SocketProvider() {
     state.tradeData ? parseFloat(state.tradeData.price).toFixed(2) : "0",
   );
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
+  const sendAuthToSocket = useFutureStore((state) => state.sendAuthToSocket);
+
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -29,6 +31,8 @@ export default function SocketProvider() {
   }, [price]);
 
   useEffect(() => {
+    connectSocket();
+
     const checkAuth = async () => {
       try {
         const res = await fetch(
@@ -38,21 +42,7 @@ export default function SocketProvider() {
         if (res.ok) {
           const data = await res.json();
           setAuthStatus("logged-in");
-
-          // 소켓에 userId 전송
-          const socket = useFutureStore.getState().socket;
-          if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: "auth", userId: data.id }));
-          } else {
-            // 소켓 연결 전이면 연결 후 전송
-            const interval = setInterval(() => {
-              const s = useFutureStore.getState().socket;
-              if (s && s.readyState === WebSocket.OPEN) {
-                s.send(JSON.stringify({ type: "auth", userId: data.id }));
-                clearInterval(interval);
-              }
-            }, 100);
-          }
+          sendAuthToSocket(data.id); // setInterval 로직 대신 이걸로 교체
         } else {
           setAuthStatus("guest");
         }
@@ -60,13 +50,11 @@ export default function SocketProvider() {
         setAuthStatus("guest");
       }
     };
-    checkAuth();
-  }, []);
 
-  useEffect(() => {
-    connectSocket();
+    checkAuth();
+
     return () => disconnectSocket();
-  }, []);
+  }, [connectSocket, disconnectSocket, sendAuthToSocket, setAuthStatus]);
 
   return null;
 }

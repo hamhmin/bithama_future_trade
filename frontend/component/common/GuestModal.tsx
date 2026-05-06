@@ -15,6 +15,7 @@ export default function GuestModal({
 }) {
   const router = useRouter();
   const setAuthStatus = useFutureStore((state) => state.setAuthStatus);
+  const sendAuthToSocket = useFutureStore((state) => state.sendAuthToSocket);
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +43,7 @@ export default function GuestModal({
       const data = await res.json();
       if (res.ok) {
         setAuthStatus("logged-in");
+        sendAuthToSocket(data.userId);
         onClose();
       } else {
         setMessage(data.message ?? "로그인 실패");
@@ -82,7 +84,9 @@ export default function GuestModal({
           },
         );
         if (loginRes.ok) {
+          const loginData = await loginRes.json();
           setAuthStatus("logged-in");
+          sendAuthToSocket(loginData.userId);
           onClose();
         }
       } else {
@@ -120,7 +124,9 @@ export default function GuestModal({
         },
       );
       if (res.ok) {
+        const data = await res.json();
         setAuthStatus("logged-in");
+        sendAuthToSocket(data.userId);
         onClose();
       }
     } catch {

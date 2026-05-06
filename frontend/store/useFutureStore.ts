@@ -51,6 +51,7 @@ interface FutureStore {
   // setDepthData: (v: DepthData) => void;
   lastDisconnectedAt: number | null;
   setLastDisconnectedAt: (t: number | null) => void;
+  sendAuthToSocket: (userId: number) => void;
 }
 
 const dummyDepthData = {
@@ -210,4 +211,20 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
   setShouldRefresh: (v: boolean) => set({ shouldRefresh: v }),
   // setDepthData: (data: DepthData) => set({ depthData: data }),
   // setTradeData: (data: TradeData) => set({ tradeData: data }),
+  sendAuthToSocket: (userId: number) => {
+    const socket = get().socket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: "auth", userId }));
+    } else {
+      // 소켓 연결 전이면 대기
+      const interval = setInterval(() => {
+        const s = get().socket;
+        if (s && s.readyState === WebSocket.OPEN) {
+          s.send(JSON.stringify({ type: "auth", userId }));
+          clearInterval(interval);
+        }
+      }, 100);
+      setTimeout(() => clearInterval(interval), 5000);
+    }
+  },
 }));
