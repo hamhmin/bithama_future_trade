@@ -18,7 +18,8 @@ const INTERVALS = Object.keys(RETENTION);
 
 // 초기 적재 - 보관기간 전체를 페이지네이션으로 가져오기
 const initialFetchCandles = async (symbol: string, interval: string) => {
-  const days = RETENTION[interval].days;
+  const days = (RETENTION[interval] as { days: number }).days;
+
   if (days === 9999) {
     // 1d는 한 번만 호출해도 충분
     await fetchAndSaveCandles(symbol, interval);
