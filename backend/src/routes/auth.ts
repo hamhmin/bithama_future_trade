@@ -230,4 +230,16 @@ router.patch(
     res.json({ message: "비밀번호 변경 완료!" });
   },
 );
+// USDT 환율 프록시
+router.get("/usdt-price", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://api.upbit.com/v1/ticker?markets=KRW-USDT",
+    );
+    const data = await response.json();
+    res.json({ price: data[0].trade_price });
+  } catch {
+    res.json({ price: 1484 });
+  }
+});
 export default router;

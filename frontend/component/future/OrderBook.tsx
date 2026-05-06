@@ -2,18 +2,6 @@
 
 import { useFutureStore } from "@/store/useFutureStore";
 import { useEffect, useState, useRef, useMemo } from "react";
-export const getUsdtPrice = async () => {
-  try {
-    const response = await fetch(
-      "https://api.upbit.com/v1/ticker?markets=KRW-USDT",
-    );
-    const data = await response.json();
-    return data[0].trade_price;
-  } catch (error) {
-    console.error("USDT 가격 로드 실패:", error);
-    return 1484;
-  }
-};
 
 type Trade = {
   price: string;
@@ -51,22 +39,24 @@ export default function OrderBook({
       : (initialDepth ?? { type: "호가창", bids: [], asks: [] });
   const tradeData = tradeFromSocket ? tradeFromSocket : initialTrade;
 
+  // getUsdtPrice 함수 전체 제거
+
+  // useEffect 수정
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const response = await fetch(
-          "https://api.upbit.com/v1/ticker?markets=KRW-USDT",
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/usdt-price`,
         );
-        const data = await response.json();
-        setUsdtPrice(data[0].trade_price);
-      } catch (error) {
-        console.error("USDT 로드 실패:", error);
+        const data = await res.json();
+        setUsdtPrice(data.price);
+      } catch {
         setUsdtPrice(1484);
       }
     };
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 60000);
+    const interval = setInterval(fetchPrice, 300000); // 5분마다
     return () => clearInterval(interval);
   }, []);
 
