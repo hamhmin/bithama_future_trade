@@ -35,7 +35,7 @@ export default function TradeInfo() {
     const fetchFunding = async () => {
       try {
         const res = await fetch(
-          "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/premium-index`,
         );
         const data = await res.json();
         setFunding({

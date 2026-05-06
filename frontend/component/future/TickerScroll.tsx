@@ -15,7 +15,9 @@ export default function TickerScroll() {
 
   const fetchTickers = async () => {
     try {
-      const res = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/ticker-all`,
+      );
       const data = await res.json();
 
       // 거래량 상위 20개 USDT 페어만

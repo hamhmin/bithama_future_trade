@@ -242,4 +242,59 @@ router.get("/usdt-price", async (req, res) => {
     res.json({ price: 1484 });
   }
 });
+// 메모리 캐시
+let tickerCache: { data: any; updatedAt: number } | null = null;
+let premiumCache: { data: any; updatedAt: number } | null = null;
+let ticker24hCache: { data: any; updatedAt: number } | null = null;
+
+// 24hr 단일 심볼 티커
+router.get("/ticker", async (req, res) => {
+  try {
+    if (tickerCache && Date.now() - tickerCache.updatedAt < 10000) {
+      return res.json(tickerCache.data);
+    }
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/ticker`,
+    );
+    const data = await response.json();
+    tickerCache = { data, updatedAt: Date.now() };
+    res.json(data);
+  } catch {
+    res.status(500).json({ message: "티커 로딩 실패" });
+  }
+});
+
+// 펀딩비/프리미엄 인덱스
+router.get("/premium-index", async (req, res) => {
+  try {
+    if (premiumCache && Date.now() - premiumCache.updatedAt < 10000) {
+      return res.json(premiumCache.data);
+    }
+    const response = await fetch(
+      "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT",
+    );
+    const data = await response.json();
+    premiumCache = { data, updatedAt: Date.now() };
+    res.json(data);
+  } catch {
+    res.status(500).json({ message: "프리미엄 인덱스 로딩 실패" });
+  }
+});
+
+// 전체 심볼 24hr 티커 (TickerScroll용)
+router.get("/ticker-all", async (req, res) => {
+  try {
+    if (ticker24hCache && Date.now() - ticker24hCache.updatedAt < 10000) {
+      return res.json(ticker24hCache.data);
+    }
+    const response = await fetch(
+      "https://fapi.binance.com/fapi/v1/ticker/24hr",
+    );
+    const data = await response.json();
+    ticker24hCache = { data, updatedAt: Date.now() };
+    res.json(data);
+  } catch {
+    res.status(500).json({ message: "전체 티커 로딩 실패" });
+  }
+});
 export default router;

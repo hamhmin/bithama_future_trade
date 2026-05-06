@@ -53,7 +53,7 @@ export default function FutureHeader({ initialTrade }: { initialTrade: any }) {
     const fetchTicker = async () => {
       try {
         const res = await fetch(
-          "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/ticker`,
         );
         const data = await res.json();
         setTicker(data);
