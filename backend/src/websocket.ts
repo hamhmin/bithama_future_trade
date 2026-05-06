@@ -1,5 +1,6 @@
 import WebSocket, { WebSocketServer } from "ws";
 import prisma from "./prisma.js";
+import { transitionPosition, transitionOrder } from "./lib/stateMachine.js";
 
 export let latestPrice: number = 0;
 export let latestDepth: any = null; // 호가창
@@ -134,6 +135,8 @@ const checkLiquidation = async (currentPrice: number) => {
           : "SL 손절가에 도달해 청산됐어요!";
 
       await prisma.$transaction(async (tx) => {
+        transitionPosition(position.status, closeStatus);
+
         await tx.position.update({
           where: { id: position.id },
           data: { status: closeStatus, pnl },
@@ -214,6 +217,7 @@ const checkLimitOrders = async (currentPrice: number) => {
 
           if (!wallet || wallet.balance < marginDiff) {
             // 잔고 부족 → 주문 취소 + 기존 증거금 환불
+            transitionOrder(order.status, "cancelled");
             await tx.order.update({
               where: { id: order.id },
               data: { status: "cancelled" },

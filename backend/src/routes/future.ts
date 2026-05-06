@@ -7,6 +7,7 @@ import { latestPrice } from "../websocket.js";
 import { sendToUser } from "../websocket.js";
 import { latestDepth, latestTradeData } from "../websocket.js";
 import rateLimit from "express-rate-limit";
+import { transitionOrder } from "../lib/stateMachine.js";
 
 const router = Router();
 
@@ -353,7 +354,10 @@ router.delete(
       res.status(404).json({ message: "주문을 찾을 수 없어요." });
       return;
     }
-    if (order.status !== "open") {
+
+    try {
+      transitionOrder(order.status, "cancelled");
+    } catch {
       res.status(400).json({ message: "취소할 수 없는 주문이에요." });
       return;
     }
