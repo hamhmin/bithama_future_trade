@@ -288,7 +288,7 @@ export default function OrderPanel({
   };
 
   return (
-    <div className="w-full h-full flex flex-col p-3 gap-3 text-sm">
+    <div className="w-full md:h-full min-h-[530px] flex flex-col p-3 gap-3 text-sm ">
       {/* 마진타입 + 레버리지 */}
       <MarginLeverageBar
         leverageBtnRef={leverageBtnRef}

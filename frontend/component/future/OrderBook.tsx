@@ -85,7 +85,7 @@ export default function OrderBook({
         time: tradeData.time,
         isBuy,
       },
-      ...prev.slice(0, 49), // 최대 50개 유지
+      ...prev.slice(0, 23), // 최대 50개 유지
     ]);
   }, [tradeData]);
 
@@ -263,7 +263,7 @@ export default function OrderBook({
       {/* 체결 내역 탭 */}
       {tab === "trades" && (
         <>
-          <div className="flex justify-between px-2 py-1 text-gray-500 border-b border-gray-800 font-medium">
+          <div className="flex justify-between px-2 py-1 text-gray-500 border-b border-gray-800 font-medium text-[10px]">
             <span>가격(USDT)</span>
             <span>수량(BTC)</span>
             <span>시간</span>
@@ -294,6 +294,7 @@ export default function OrderBook({
                       hour: "2-digit",
                       minute: "2-digit",
                       second: "2-digit",
+                      hour12: false,
                     })}
                   </span>
                 </div>
