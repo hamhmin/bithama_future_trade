@@ -60,54 +60,56 @@ export default function TransactionHistoryTab() {
   }
 
   return (
-    <table className="w-full text-xs">
-      <thead>
-        <tr className="text-gray-500 border-b border-gray-700">
-          <th className="px-3 py-2 text-left">심볼</th>
-          <th className="px-3 py-2 text-left">방향</th>
-          <th className="px-3 py-2 text-right">펀딩비율</th>
-          <th className="px-3 py-2 text-right">금액</th>
-          <th className="px-3 py-2 text-right">일시</th>
-        </tr>
-      </thead>
-      <tbody>
-        {history.map((item) => {
-          const isPositive = item.amount >= 0;
-          return (
-            <tr
-              key={item.id}
-              className="border-b border-gray-800 hover:bg-gray-800"
-            >
-              <td className="px-3 py-2 text-white">{item.position.symbol}</td>
-              <td className="px-3 py-2">
-                <span
-                  className={`font-bold ${
-                    item.position.side === "long"
-                      ? "text-green-400"
-                      : "text-red-400"
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs whitespace-nowrap min-w-[800px]">
+        <thead>
+          <tr className="text-gray-500 border-b border-gray-700">
+            <th className="px-3 py-2 text-left">심볼</th>
+            <th className="px-3 py-2 text-left">방향</th>
+            <th className="px-3 py-2 text-right">펀딩비율</th>
+            <th className="px-3 py-2 text-right">금액</th>
+            <th className="px-3 py-2 text-right">일시</th>
+          </tr>
+        </thead>
+        <tbody>
+          {history.map((item) => {
+            const isPositive = item.amount >= 0;
+            return (
+              <tr
+                key={item.id}
+                className="border-b border-gray-800 hover:bg-gray-800"
+              >
+                <td className="px-3 py-2 text-white">{item.position.symbol}</td>
+                <td className="px-3 py-2">
+                  <span
+                    className={`font-bold ${
+                      item.position.side === "long"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {item.position.side === "long" ? "Long" : "Short"}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right text-gray-400">
+                  {(item.rate * 100).toFixed(4)}%
+                </td>
+                <td
+                  className={`px-3 py-2 text-right font-bold ${
+                    isPositive ? "text-green-400" : "text-red-400"
                   }`}
                 >
-                  {item.position.side === "long" ? "Long" : "Short"}
-                </span>
-              </td>
-              <td className="px-3 py-2 text-right text-gray-400">
-                {(item.rate * 100).toFixed(4)}%
-              </td>
-              <td
-                className={`px-3 py-2 text-right font-bold ${
-                  isPositive ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {isPositive ? "+" : ""}
-                {item.amount.toFixed(4)} USDT
-              </td>
-              <td className="px-3 py-2 text-right text-gray-400">
-                {new Date(item.createdAt).toLocaleString("ko-KR")}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+                  {isPositive ? "+" : ""}
+                  {item.amount.toFixed(4)} USDT
+                </td>
+                <td className="px-3 py-2 text-right text-gray-400">
+                  {new Date(item.createdAt).toLocaleString("ko-KR")}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

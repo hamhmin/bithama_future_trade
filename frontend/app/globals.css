@@ -44,3 +44,36 @@ button:disabled {
   animation: ticker 140s linear infinite;
   user-select: none;
 }
+
+/* 스크롤바 전체 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* 스크롤바 트랙 */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 스크롤바 thumb */
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 999px;
+  cursor: move;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #879cc4;
+  cursor: move;
+}
+
+/* 스크롤바 thumb hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #879cc4;
+}
+
+/* 스크롤바 코너 */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
