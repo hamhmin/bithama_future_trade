@@ -599,6 +599,7 @@ export default function PositionTable({
                           ? `$${pos.stopLoss.toLocaleString()}`
                           : "-"}
                       </span>
+                      🔧
                     </button>
                   </div>
                 </td>
@@ -648,7 +649,7 @@ export default function PositionTable({
                           <LoadingDots size="xs" color="white" />
                         </div>
                       ) : (
-                        "청산"
+                        "빠른청산"
                       )}
                     </button>
                   </div>

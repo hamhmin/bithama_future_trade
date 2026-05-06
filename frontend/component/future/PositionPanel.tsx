@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { fetchPositions, fetchOrders, fetchAssets } from "@/lib/queries";
+import ConfirmModal from "@/component/common/ConfirmModal";
 
 type Position = {
   id: number;
@@ -60,6 +61,9 @@ export default function PositionPanel() {
   const [history, setHistory] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [confirmClose, setConfirmClose] = useState<number | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<number | null>(null);
+
   const { data: positions = [], isLoading: positionLoading } = useQuery<
     Position[]
   >({
@@ -87,16 +91,19 @@ export default function PositionPanel() {
   };
 
   const closePosition = async (positionId: number) => {
-    if (!confirm("포지션을 청산할까요?")) return;
+    setConfirmClose(positionId);
+  };
+  const handleConfirmClose = async () => {
+    if (!confirmClose) return;
+    setConfirmClose(null);
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${positionId}/close`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/position/${confirmClose}/close`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          // body 없으면 전체 청산 (size = position.size)
         },
       );
       const data = await res.json();
@@ -106,17 +113,21 @@ export default function PositionPanel() {
         toast.error(data.message);
       }
     } catch {
-      alert("청산 실패");
+      toast.error("청산 실패");
     } finally {
       setLoading(false);
     }
   };
 
   const cancelOrder = async (orderId: number) => {
-    if (!confirm("주문을 취소할까요?")) return;
+    setConfirmCancel(orderId);
+  };
+  const handleConfirmCancel = async () => {
+    if (!confirmCancel) return;
+    setConfirmCancel(null);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/future/order/${orderId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/future/order/${confirmCancel}`,
         { method: "DELETE", credentials: "include" },
       );
       const data = await res.json();
@@ -128,7 +139,7 @@ export default function PositionPanel() {
         toast.error(data.message);
       }
     } catch {
-      alert("취소 실패");
+      toast.error("취소 실패");
     }
   };
 
@@ -229,6 +240,26 @@ export default function PositionPanel() {
 
       {/* 게스트 모달 */}
       {showModal && <GuestModal onClose={() => setShowModal(false)} />}
+      {/* confirm모달 */}
+      {confirmClose && (
+        <ConfirmModal
+          title="포지션을 빠른청산 할까요?"
+          description="시장가로 즉시 전체 청산돼요."
+          confirmText="빠른청산"
+          confirmColor="red"
+          onConfirm={handleConfirmClose}
+          onCancel={() => setConfirmClose(null)}
+        />
+      )}
+      {confirmCancel && (
+        <ConfirmModal
+          title="주문을 취소할까요?"
+          confirmText="취소하기"
+          confirmColor="red"
+          onConfirm={handleConfirmCancel}
+          onCancel={() => setConfirmCancel(null)}
+        />
+      )}
     </div>
   );
 }
