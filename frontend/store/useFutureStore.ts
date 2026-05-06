@@ -137,6 +137,24 @@ export const useFutureStore = create<FutureStore>((set, get) => ({
 
     socket.onopen = () => {
       startHeartbeat();
+      console.log("소켓 onopen 실행");
+
+      // 재연결 시 userId 재전송
+      const authStatus = get().authStatus;
+      if (authStatus === "logged-in") {
+        // me API에서 userId 가져와서 전송
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+          credentials: "include",
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.id) {
+              socket.send(JSON.stringify({ type: "auth", userId: data.id }));
+              console.log("재연결 후 userId 재전송:", data.id);
+            }
+          })
+          .catch(() => {});
+      }
     };
 
     socket.onmessage = (event) => {
