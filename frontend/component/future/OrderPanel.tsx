@@ -64,6 +64,7 @@ export default function OrderPanel({
   const [orderTab, setOrderTab] = useState<"open" | "close">("open");
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
+  const [orderFormKey, setOrderFormKey] = useState(0);
 
   // 쿼리
   const { data: positions = [], isLoading: posLoading } = useQuery({
@@ -220,6 +221,7 @@ export default function OrderPanel({
         setPrice("");
         setTakeProfit("");
         setStopLoss("");
+        setOrderFormKey((prev) => prev + 1); // 추가
       }
     } catch {
       setMessage("서버 오류");
@@ -387,6 +389,7 @@ export default function OrderPanel({
 
           {/* 주문 폼 */}
           <OrderForm
+            key={orderFormKey} // state 초기화용
             side={side}
             orderType={orderType}
             price={price}
