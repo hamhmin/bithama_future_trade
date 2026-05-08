@@ -25,15 +25,26 @@ export function useTutorial(tutorialCompleted?: boolean) {
   // 튜토리얼 시작 조건 체크
   useEffect(() => {
     if (authStatus === "loading") return;
+    // 로그아웃 시 초기화
+    if (authStatus === "guest") {
+      startTransition(() => {
+        setIsCompleted(false);
+        setIsActive(false);
+        setShowStartModal(false);
+        setCurrentStep(0);
+      });
+      return;
+    }
     if (authStatus !== "logged-in") return; // 로그아웃 상태면 스킵
-
+    if (tutorialCompleted === undefined) return; // me 쿼리 로딩 중 방어
+    if (isCompleted) return; // 완료 후 재실행 방지
     // DB 기준으로만 체크
     if (tutorialCompleted === false) {
       startTransition(() => {
         setShowStartModal(true);
       });
     }
-  }, [authStatus, tutorialCompleted]);
+  }, [authStatus, tutorialCompleted, isCompleted]);
   const startTutorial = () => {
     setShowStartModal(false);
     setIsActive(true);
