@@ -5,6 +5,7 @@ import { useFutureStore } from "@/store/useFutureStore";
 import ShareCard from "./ShareCard";
 import toast from "react-hot-toast";
 import LoadingDots from "@/component/common/LoadingDots";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 type Position = {
   id: number;
@@ -484,6 +485,7 @@ export default function PositionTable({
   const currentPrice = useFutureStore((state) =>
     state.tradeData ? parseFloat(state.tradeData.price) : 0,
   );
+  const isDesktop = useIsDesktop();
 
   const [addMarginTarget, setAddMarginTarget] = useState<Position | null>(null);
   const [leverageTarget, setLeverageTarget] = useState<Position | null>(null);
@@ -499,10 +501,11 @@ export default function PositionTable({
             ? (currentPrice - pos.entryPrice) * pos.size
             : (pos.entryPrice - currentPrice) * pos.size;
         const roe = (pnl / pos.margin) * 100;
-        acc[pos.id] = { pnl, roe };
+        const marginRatio = (pos.margin / (pos.entryPrice * pos.size)) * 100;
+        acc[pos.id] = { pnl, roe, marginRatio };
         return acc;
       },
-      {} as Record<number, { pnl: number; roe: number }>,
+      {} as Record<number, { pnl: number; roe: number; marginRatio: number }>,
     );
   }, [positions, currentPrice]);
 
@@ -514,6 +517,231 @@ export default function PositionTable({
     );
   }
 
+  const modals = (
+    <>
+      {addMarginTarget && (
+        <AddMarginModal
+          position={addMarginTarget}
+          onClose={() => setAddMarginTarget(null)}
+          onSuccess={onRefresh}
+        />
+      )}
+      {leverageTarget && (
+        <LeverageModal
+          position={leverageTarget}
+          onClose={() => setLeverageTarget(null)}
+          onSuccess={onRefresh}
+        />
+      )}
+      {tpslTarget && (
+        <TpSlModal
+          position={tpslTarget}
+          onClose={() => setTpslTarget(null)}
+          onSuccess={onRefresh}
+        />
+      )}
+      {shareTarget && (
+        <ShareCard
+          position={shareTarget}
+          currentPrice={currentPrice}
+          onClose={() => setShareTarget(null)}
+        />
+      )}
+    </>
+  );
+
+  // 모바일 카드 뷰
+  if (!isDesktop) {
+    return (
+      <div className="flex flex-col gap-3 p-3">
+        {positions.map((pos) => {
+          const { pnl, roe, marginRatio } = pnlMap[pos.id] ?? {
+            pnl: 0,
+            roe: 0,
+            marginRatio: 0,
+          };
+          const isProfit = pnl >= 0;
+
+          return (
+            <div
+              key={pos.id}
+              className="bg-gray-900 rounded-xl p-3 flex flex-col gap-2.5 border border-gray-700/50"
+            >
+              {/* 상단: 심볼 + 마진타입 + 레버리지 + 공유 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded font-bold ${
+                      pos.side === "long"
+                        ? "text-green-400 bg-green-400/10"
+                        : "text-red-400 bg-red-400/10"
+                    }`}
+                  >
+                    {pos.side === "long" ? "Long" : "Short"}
+                  </span>
+                  <span className="text-white font-bold text-sm">BTCUSDT</span>
+                  <span
+                    className={`text-[10px] px-1 py-0.5 rounded ${
+                      pos.marginType === "cross"
+                        ? "text-yellow-400 bg-yellow-400/10"
+                        : "text-blue-400 bg-blue-400/10"
+                    }`}
+                  >
+                    {pos.marginType === "cross" ? "Cross" : "Iso"}
+                  </span>
+                  <button
+                    onClick={() => setLeverageTarget(pos)}
+                    className="text-gray-400 text-[11px] hover:text-blue-400 transition-colors"
+                  >
+                    {pos.leverage}x ✎
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShareTarget(pos)}
+                  className="text-gray-400 hover:text-white text-[11px] transition-colors px-1.5 py-0.5 rounded bg-gray-800"
+                >
+                  공유
+                </button>
+              </div>
+
+              {/* 미실현 손익 + ROE */}
+              <div className="flex justify-between items-end border-b border-gray-700/50 pb-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500 tracking-wide">
+                    미실현 손익 (USDT)
+                  </span>
+                  <span
+                    className={`text-xl font-bold ${isProfit ? "text-green-400" : "text-red-400"}`}
+                  >
+                    {isProfit ? "+" : ""}
+                    {pnl.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 items-end">
+                  <span className="text-[9px] text-gray-500 tracking-wide">
+                    ROE
+                  </span>
+                  <span
+                    className={`text-base font-bold ${isProfit ? "text-green-400" : "text-red-400"}`}
+                  >
+                    {isProfit ? "+" : ""}
+                    {roe.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* 수량 | 증거금 | 마진비율 */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500">수량 (BTC)</span>
+                  <span className="text-white text-xs font-medium">
+                    {pos.size}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500">
+                    증거금 (USDT)
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-white text-xs font-medium">
+                      {pos.margin.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => setAddMarginTarget(pos)}
+                      className="text-gray-500 hover:text-blue-400 text-[9px] transition-colors"
+                    >
+                      +추가
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500">마진비율</span>
+                  <span className="text-white text-xs font-medium">
+                    {marginRatio.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* 진입가 | 현재가 | 청산가 */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500">진입가</span>
+                  <span className="text-white text-xs font-medium">
+                    {pos.entryPrice.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500">현재가</span>
+                  <span className="text-white text-xs font-medium">
+                    {currentPrice.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-gray-500">청산가</span>
+                  <span className="text-orange-400 text-xs font-medium">
+                    {pos.liquidationPrice.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* TP/SL */}
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-gray-500">TP/SL</span>
+                <button
+                  onClick={() => setTpslTarget(pos)}
+                  className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+                >
+                  <span className="text-green-400 text-[11px]">
+                    {pos.takeProfit
+                      ? `$${pos.takeProfit.toLocaleString()}`
+                      : "-"}
+                  </span>
+                  <span className="text-gray-600">/</span>
+                  <span className="text-red-400 text-[11px]">
+                    {pos.stopLoss ? `$${pos.stopLoss.toLocaleString()}` : "-"}
+                  </span>
+                  <span className="text-[10px]">🔧</span>
+                </button>
+              </div>
+
+              {/* 하단 버튼 */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setLeverageTarget(pos)}
+                  className="py-2 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                >
+                  레버리지
+                </button>
+                <button
+                  onClick={() => setTpslTarget(pos)}
+                  className="py-2 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                >
+                  TP/SL
+                </button>
+                <button
+                  onClick={() => onClose(pos.id)}
+                  disabled={loading}
+                  className="py-2 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <LoadingDots size="xs" color="white" />
+                    </div>
+                  ) : (
+                    "빠른청산"
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {modals}
+      </div>
+    );
+  }
+
+  // 데스크탑 테이블 뷰 (기존 그대로)
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs whitespace-nowrap min-w-[800px]">
@@ -534,7 +762,6 @@ export default function PositionTable({
         <tbody>
           {positions.map((pos) => {
             const { pnl, roe } = pnlMap[pos.id] ?? { pnl: 0, roe: 0 };
-
             const isProfit = pnl >= 0;
 
             return (
@@ -558,9 +785,7 @@ export default function PositionTable({
                 <td className="px-3 py-2">
                   <div className="flex flex-col">
                     <span
-                      className={`font-bold ${
-                        pos.side === "long" ? "text-green-400" : "text-red-400"
-                      }`}
+                      className={`font-bold ${pos.side === "long" ? "text-green-400" : "text-red-400"}`}
                     >
                       {pos.side === "long" ? "Long" : "Short"}
                     </span>
@@ -616,17 +841,13 @@ export default function PositionTable({
                   </div>
                 </td>
                 <td
-                  className={`px-3 py-2 text-right font-bold ${
-                    isProfit ? "text-green-400" : "text-red-400"
-                  }`}
+                  className={`px-3 py-2 text-right font-bold ${isProfit ? "text-green-400" : "text-red-400"}`}
                 >
                   {isProfit ? "+" : ""}
                   {pnl.toFixed(2)} USDT
                 </td>
                 <td
-                  className={`px-3 py-2 text-right font-bold ${
-                    isProfit ? "text-green-400" : "text-red-400"
-                  }`}
+                  className={`px-3 py-2 text-right font-bold ${isProfit ? "text-green-400" : "text-red-400"}`}
                 >
                   {isProfit ? "+" : ""}
                   {roe.toFixed(2)}%
@@ -660,39 +881,7 @@ export default function PositionTable({
         </tbody>
       </table>
 
-      {/* 증거금 추가 모달 */}
-      {addMarginTarget && (
-        <AddMarginModal
-          position={addMarginTarget}
-          onClose={() => setAddMarginTarget(null)}
-          onSuccess={onRefresh}
-        />
-      )}
-
-      {/* 레버리지 변경 모달 */}
-      {leverageTarget && (
-        <LeverageModal
-          position={leverageTarget}
-          onClose={() => setLeverageTarget(null)}
-          onSuccess={onRefresh}
-        />
-      )}
-
-      {/* TP/SL 변경 모달 */}
-      {tpslTarget && (
-        <TpSlModal
-          position={tpslTarget}
-          onClose={() => setTpslTarget(null)}
-          onSuccess={onRefresh}
-        />
-      )}
-      {shareTarget && (
-        <ShareCard
-          position={shareTarget}
-          currentPrice={currentPrice}
-          onClose={() => setShareTarget(null)}
-        />
-      )}
+      {modals}
     </div>
   );
 }

@@ -47,8 +47,8 @@ button:disabled {
 
 /* 스크롤바 전체 */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 4px;
+  height: 4px;
 }
 
 /* 스크롤바 트랙 */
