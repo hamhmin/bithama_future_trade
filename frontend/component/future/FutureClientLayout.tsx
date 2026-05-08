@@ -198,11 +198,11 @@ export default function FutureClientLayout({
           </div>
 
           {/* 상단 - 주문 + 호가창 */}
-          <div className="flex border-b border-gray-700">
+          <div className="flex border-b border-gray-700 min-h-[570px]">
             <div className="flex-1 min-w-0 border-r border-gray-700 overflow-y-auto">
               <OrderPanel positionPanelRef={positionPanelRef} />
             </div>
-            <div className="w-44 shrink-0 overflow-hidden">
+            <div className="w-44 shrink-0 overflow-hidden h-full">
               <OrderBook initialDepth={depth} initialTrade={trade} />
             </div>
           </div>
