@@ -174,8 +174,9 @@ export default function OrderBook({
                 return (
                   <div
                     key={`ask-${i}`}
-                    className="flex justify-between px-2 py-1 relative hover:bg-white/5 cursor-pointer transition-colors"
+                    className="flex justify-between px-2 relative hover:bg-white/5 cursor-pointer transition-colors"
                     onClick={() => setSelectedPrice(parseFloat(ask.price))}
+                    style={{ paddingBlock: "calc(var(--spacing) * 0.8)" }}
                   >
                     <div
                       className="absolute right-0 top-0 bottom-[1px] bg-red-500/15 transition-all duration-200 ease-out"
@@ -226,8 +227,9 @@ export default function OrderBook({
                 return (
                   <div
                     key={`bid-${i}`}
-                    className="flex justify-between px-2 py-1 relative hover:bg-white/5 cursor-pointer transition-colors"
+                    className="flex justify-between px-2 relative hover:bg-white/5 cursor-pointer transition-colors"
                     onClick={() => setSelectedPrice(parseFloat(bid.price))}
+                    style={{ paddingBlock: "calc(var(--spacing) * 0.8)" }}
                   >
                     <div
                       className="absolute right-0 top-0 bottom-[1px] bg-green-500/15 transition-all duration-200 ease-out"
