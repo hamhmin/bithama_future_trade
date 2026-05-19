@@ -18,14 +18,14 @@
 
 [ 전체 화면 - 데스크탑 ]
 <img width="1906" height="918" alt="image" src="https://github.com/user-attachments/assets/c00d18c5-6dbd-436d-a5d6-179b280655fb" />
-<br/>
+<br/><br/><br/><br/><br/><br/>
 [ 포지션탭 ]
 <img width="1432" height="243" alt="image" src="https://github.com/user-attachments/assets/f292af06-fcbc-4720-9e40-8d78c4399c5f" />
-<br/>
+<br/><br/><br/><br/><br/><br/>
 [ 튜토리얼 spotlight ]
 <img width="700" height="478" alt="image" src="https://github.com/user-attachments/assets/6f37ebea-f232-4089-b2fe-da8a42b1d0a4" />
 <img width="1496" height="790" alt="image" src="https://github.com/user-attachments/assets/c7e7c849-a660-489e-a0c2-9391b2bc51ca" />
-<br/>
+<br/><br/><br/><br/><br/><br/>
 [ 모바일 화면 ]
 <img width="345" height="724" alt="image" src="https://github.com/user-attachments/assets/871f070f-3d58-4593-89ba-5613629e5138" />
 
