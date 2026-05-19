@@ -16,6 +16,7 @@
 
 실제 체결 엔진 없이 바이낸스 현재가 기준으로 즉시 체결 처리하며, 펀딩비 정산·청산·TP/SL 등 실제 거래소 구조를 재현했습니다.
 
+<br/><br/><br/><br/><br/><br/>
 [ 전체 화면 - 데스크탑 ]
 <img width="1906" height="918" alt="image" src="https://github.com/user-attachments/assets/c00d18c5-6dbd-436d-a5d6-179b280655fb" />
 <br/><br/><br/><br/><br/><br/>
@@ -29,7 +30,7 @@
 [ 모바일 화면 ]
 <img width="345" height="724" alt="image" src="https://github.com/user-attachments/assets/871f070f-3d58-4593-89ba-5613629e5138" />
 
-<br/>
+<br/><br/><br/><br/><br/><br/>
 
 ## 🛠 기술 스택
 
