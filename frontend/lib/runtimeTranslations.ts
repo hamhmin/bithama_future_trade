@@ -1,6 +1,10 @@
 import type { Locale } from "@/lib/i18n";
 
 type RuntimeTranslationMap = Record<string, string>;
+type RuntimePattern = {
+  pattern: RegExp;
+  replace: string | ((match: RegExpMatchArray) => string);
+};
 
 const en: RuntimeTranslationMap = {
   "거래소": "Exchange",
@@ -44,8 +48,24 @@ const en: RuntimeTranslationMap = {
   "게스트로 시작하기": "Continue as guest",
   "게스트로 시작": "Continue as guest",
   "게스트는 일회용 계정이에요": "Guest accounts are temporary",
+  "10만 USDT가 자동으로 지급돼요":
+    "100,000 USDT is granted automatically",
   "게스트는 일회용 계정이에요. 10만 USDT가 자동으로 지급돼요.":
     "Guest accounts are temporary. 100,000 USDT is granted automatically.",
+  "로그인하고 모의 선물거래를 시작해보세요!":
+    "Log in and start simulated futures trading!",
+  "이메일과 비밀번호를 입력해주세요.": "Please enter email and password.",
+  "닉네임을 입력해주세요.": "Please enter a nickname.",
+  "모든 항목을 입력해주세요.": "Please fill in all fields.",
+  "오류가 발생했어요.": "Something went wrong.",
+  "회원가입 성공! 로그인해주세요.": "Sign up complete! Please log in.",
+  "게스트 로그인 실패": "Guest login failed.",
+  "로그인 실패": "Login failed.",
+  "회원가입 실패": "Sign up failed.",
+  "8자 이상, 영문+숫자 조합으로 입력해주세요":
+    "Use at least 8 characters with letters and numbers",
+  "8자 이상, 영문+숫자": "8+ characters, letters + numbers",
+  "← 뒤로": "<- Back",
   "이미 계정이 있나요?": "Already have an account?",
   "계정이 없나요?": "Need an account?",
   "뒤로": "Back",
@@ -53,8 +73,11 @@ const en: RuntimeTranslationMap = {
   "취소": "Cancel",
   "닫기": "Close",
   "차트": "Chart",
+  "📈 차트": "📈 Chart",
+  "✕ 닫기": "✕ Close",
   "잔고": "Balance",
   "무기한": "Perpetual",
+  "BTCUSDT 무기한": "BTCUSDT Perpetual",
   "24H 고가": "24H High",
   "24H 저가": "24H Low",
   "24H 거래량": "24H Volume",
@@ -63,6 +86,12 @@ const en: RuntimeTranslationMap = {
   "거래량": "Volume",
   "시장가": "Market",
   "지정가": "Limit",
+  "가격(USDT)": "Price (USDT)",
+  "수량(BTC)": "Amount (BTC)",
+  "시간": "Time",
+  "호가창": "Order book",
+  "체결 내역": "Recent trades",
+  "체결 데이터 로딩중...": "Loading trade data...",
   "주문가 (USDT)": "Order price (USDT)",
   "수량 (BTC)": "Amount (BTC)",
   "선택사항": "Optional",
@@ -81,9 +110,11 @@ const en: RuntimeTranslationMap = {
   "자산": "Assets",
   "포지션 히스토리": "Position history",
   "펀딩비 내역": "Funding history",
+  "펀딩비 내역이 없어요": "No funding history",
   "로그인하면 포지션과 주문내역을 확인할 수 있어요":
     "Log in to view positions and order history",
   "포지션을 빠른청산 할까요?": "Close this position at market?",
+  "시장가로 즉시 전체 청산돼요.": "This closes the full position at market.",
   "시장가로 즉시 전체 청산해요.": "This closes the full position at market.",
   "빠른청산": "Market close",
   "주문을 취소할까요?": "Cancel this order?",
@@ -92,19 +123,26 @@ const en: RuntimeTranslationMap = {
   "미체결 주문이 없어요": "No open orders",
   "거래내역이 없어요": "No trade history",
   "청산된 포지션이 없어요": "No closed positions",
-  "펀딩비 내역이 없어요": "No funding history",
   "심볼": "Symbol",
   "방향": "Side",
+  "종류": "Type",
   "수량": "Size",
   "진입가": "Entry",
   "현재가": "Current",
   "청산가": "Liq. price",
+  "체결가": "Fill price",
+  "실현 손익": "Realized PnL",
+  "종료 평균가": "Avg. close",
+  "수수료": "Fee",
   "미실현 손익": "Unrealized PnL",
+  "미실현 손익 (USDT)": "Unrealized PnL (USDT)",
   "수익률": "ROE",
   "관리": "Actions",
   "마진비율": "Margin ratio",
+  "증거금 비율": "Margin ratio",
   "공유": "Share",
   "+ 추가": "+ Add",
+  "+추가": "+ Add",
   "증거금 추가": "Add margin",
   "현재 증거금": "Current margin",
   "현재 청산가": "Current liq. price",
@@ -121,6 +159,8 @@ const en: RuntimeTranslationMap = {
   "TP / SL 설정": "TP / SL settings",
   "TP 목표가 (USDT)": "TP price (USDT)",
   "SL 손절가 (USDT)": "SL price (USDT)",
+  "진입가보다 높게": "Above entry price",
+  "진입가보다 낮게": "Below entry price",
   "설정": "Save",
   "마진 타입 선택": "Select margin type",
   "선택됨": "Selected",
@@ -137,14 +177,23 @@ const en: RuntimeTranslationMap = {
   "텔레그램": "Telegram",
   "모의 선물거래 플랫폼": "Crypto futures trading simulator",
   "내 자산": "My assets",
+  "펀딩비": "Funding fee",
+  "현재 펀딩비율": "Current funding rate",
+  "다음 펀딩까지": "Next funding in",
+  "시장 정보": "Market info",
   "보유 자산": "Holdings",
   "사용 가능": "Available",
   "사용 중": "Locked",
   "주문가": "Order price",
-  "체결가": "Fill price",
   "상태": "Status",
+  "강제청산": "Liquidated",
+  "유지중": "Open",
+  "청산": "Close",
   "일시": "Date",
   "금액": "Amount",
+  "총 잔고": "Total balance",
+  "손익": "PnL",
+  "총 자산 (증거금 포함)": "Total equity (with margin)",
   "펀딩비율": "Funding rate",
   "개인정보처리방침": "Privacy Policy",
   "서비스 이용약관": "Terms of Service",
@@ -200,11 +249,53 @@ const en: RuntimeTranslationMap = {
     "This policy applies from April 18, 2026.",
   "문의": "Contact",
   "어드민 인덱스 페이지입니다": "Admin index page",
+  "💰 자산 현황": "💰 Assets",
+  "📊 거래 통계": "📊 Trading stats",
+  "✏️ 닉네임 변경": "✏️ Change nickname",
+  "🔒 비밀번호 변경": "🔒 Change password",
+  "닉네임이 변경됐어요!": "Nickname updated!",
+  "비밀번호가 변경됐어요!": "Password updated!",
+  "금액을 입력해주세요.": "Please enter an amount.",
+  "수량을 입력해주세요.": "Please enter an amount.",
+  "지정가를 입력해주세요.": "Please enter a limit price.",
+  "주문 실패": "Order failed",
+  "주문 완료!": "Order complete!",
+  "마진타입 변경 완료!": "Margin type updated!",
+  "레버리지 변경 완료!": "Leverage updated!",
+  "증거금 추가 완료!": "Margin added!",
+  "TP/SL 설정 완료!": "TP/SL updated!",
+  "청산 실패": "Close failed",
+  "취소 실패": "Cancel failed",
+  "포지션이 강제청산됐어요!": "Position was liquidated!",
+  "TP 목표가에 도달해 청산됐어요!": "TP reached. Position closed!",
+  "SL 손절가에 도달해 청산됐어요!": "SL reached. Position closed!",
+  "지정가 주문이 체결됐어요!": "Limit order filled!",
+  "펀딩비가 적용됐어요!": "Funding fee applied!",
   "첫 거래 완료!": "First trade complete!",
   "거래 시작하기 🚀": "Start trading",
+  "BITHAMA에 오신 걸 환영해요!": "Welcome to BITHAMA!",
   "처음이시라면 간단한 튜토리얼을 통해 선물거래를 체험해보세요.":
     "If this is your first time, try a quick futures trading tutorial.",
+  "튜토리얼 시작하기 🚀": "Start tutorial",
+  "건너뛰기": "Skip",
+  "아래 포지션탭에서 포지션을 확인하고 청산해보세요!":
+    "Check your position in the Positions tab and try closing it!",
+  "📋 여기서 거래 내역을 확인하세요": "📋 Check your trading details here",
+  "목표가/손절가 설정": "Set take-profit / stop-loss",
+  "청산가 조정을": "Adjust liquidation price",
+  "위한 추가 증거금": "by adding margin",
+  "포지션 카드 공유하기": "Share a position card",
+  "포지션 종료 및 손익": "Close the position and",
+  "확정": "lock in PnL",
+  "← 이전": "<- Previous",
+  "완료! 🎉": "Done!",
+  "다음 →": "Next ->",
+  "버튼을 클릭하면 넘어가요 →": "Click the button to continue ->",
   "주문하면 자동으로 넘어가요 →": "It advances automatically after ordering ->",
+  "수량을 입력해주세요. 💡 25%/50%/75%/100% 버튼을 눌러보세요!":
+    "Enter an amount. Try the 25%/50%/75%/100% buttons!",
+  "잔고가 부족해요. 💡 25%/50%/75%/100% 버튼을 눌러보세요!":
+    "Insufficient balance. Try the 25%/50%/75%/100% buttons!",
 };
 
 const ja: RuntimeTranslationMap = {
@@ -249,8 +340,23 @@ const ja: RuntimeTranslationMap = {
   "게스트로 시작하기": "ゲストで始める",
   "게스트로 시작": "ゲストで始める",
   "게스트는 일회용 계정이에요": "ゲストは一時アカウントです",
+  "10만 USDT가 자동으로 지급돼요": "10万USDTが自動で付与されます",
   "게스트는 일회용 계정이에요. 10만 USDT가 자동으로 지급돼요.":
     "ゲストは一時アカウントです。10万USDTが自動で付与されます。",
+  "로그인하고 모의 선물거래를 시작해보세요!":
+    "ログインして模擬先物取引を始めましょう！",
+  "이메일과 비밀번호를 입력해주세요.": "メールとパスワードを入力してください。",
+  "닉네임을 입력해주세요.": "ニックネームを入力してください。",
+  "모든 항목을 입력해주세요.": "すべての項目を入力してください。",
+  "오류가 발생했어요.": "エラーが発生しました。",
+  "회원가입 성공! 로그인해주세요.": "登録完了！ログインしてください。",
+  "게스트 로그인 실패": "ゲストログインに失敗しました。",
+  "로그인 실패": "ログインに失敗しました。",
+  "회원가입 실패": "登録に失敗しました。",
+  "8자 이상, 영문+숫자 조합으로 입력해주세요":
+    "8文字以上で英字と数字を含めて入力してください",
+  "8자 이상, 영문+숫자": "8文字以上、英字+数字",
+  "← 뒤로": "<- 戻る",
   "이미 계정이 있나요?": "すでにアカウントをお持ちですか？",
   "계정이 없나요?": "アカウントをお持ちでないですか？",
   "뒤로": "戻る",
@@ -258,8 +364,11 @@ const ja: RuntimeTranslationMap = {
   "취소": "キャンセル",
   "닫기": "閉じる",
   "차트": "チャート",
+  "📈 차트": "📈 チャート",
+  "✕ 닫기": "✕ 閉じる",
   "잔고": "残高",
   "무기한": "無期限",
+  "BTCUSDT 무기한": "BTCUSDT 無期限",
   "24H 고가": "24H高値",
   "24H 저가": "24H安値",
   "24H 거래량": "24H出来高",
@@ -268,6 +377,12 @@ const ja: RuntimeTranslationMap = {
   "거래량": "出来高",
   "시장가": "成行",
   "지정가": "指値",
+  "가격(USDT)": "価格(USDT)",
+  "수량(BTC)": "数量(BTC)",
+  "시간": "時間",
+  "호가창": "板情報",
+  "체결 내역": "約定履歴",
+  "체결 데이터 로딩중...": "約定データを読み込み中...",
   "주문가 (USDT)": "注文価格 (USDT)",
   "수량 (BTC)": "数量 (BTC)",
   "선택사항": "任意",
@@ -286,9 +401,11 @@ const ja: RuntimeTranslationMap = {
   "자산": "資産",
   "포지션 히스토리": "ポジション履歴",
   "펀딩비 내역": "資金調達料履歴",
+  "펀딩비 내역이 없어요": "資金調達料履歴はありません",
   "로그인하면 포지션과 주문내역을 확인할 수 있어요":
     "ログインするとポジションと注文履歴を確認できます",
   "포지션을 빠른청산 할까요?": "このポジションを成行で決済しますか？",
+  "시장가로 즉시 전체 청산돼요.": "市場価格で全数量を即時決済します。",
   "시장가로 즉시 전체 청산해요.": "市場価格で全数量を即時決済します。",
   "빠른청산": "成行決済",
   "주문을 취소할까요?": "この注文をキャンセルしますか？",
@@ -296,19 +413,26 @@ const ja: RuntimeTranslationMap = {
   "오픈 포지션이 없어요": "オープンポジションはありません",
   "미체결 주문이 없어요": "未約定注文はありません",
   "청산된 포지션이 없어요": "決済済みポジションはありません",
-  "펀딩비 내역이 없어요": "資金調達料履歴はありません",
   "심볼": "シンボル",
   "방향": "方向",
+  "종류": "種類",
   "수량": "数量",
   "진입가": "参入価格",
   "현재가": "現在価格",
   "청산가": "清算価格",
+  "체결가": "約定価格",
+  "실현 손익": "実現損益",
+  "종료 평균가": "平均決済価格",
+  "수수료": "手数料",
   "미실현 손익": "未実現損益",
+  "미실현 손익 (USDT)": "未実現損益 (USDT)",
   "수익률": "ROE",
   "관리": "管理",
   "마진비율": "証拠金率",
+  "증거금 비율": "証拠金率",
   "공유": "共有",
   "+ 추가": "+ 追加",
+  "+추가": "+ 追加",
   "증거금 추가": "証拠金追加",
   "현재 증거금": "現在の証拠金",
   "현재 청산가": "現在の清算価格",
@@ -325,6 +449,8 @@ const ja: RuntimeTranslationMap = {
   "TP / SL 설정": "TP / SL設定",
   "TP 목표가 (USDT)": "TP価格 (USDT)",
   "SL 손절가 (USDT)": "SL価格 (USDT)",
+  "진입가보다 높게": "参入価格より高く",
+  "진입가보다 낮게": "参入価格より低く",
   "설정": "設定",
   "마진 타입 선택": "マージンタイプ選択",
   "선택됨": "選択中",
@@ -341,14 +467,23 @@ const ja: RuntimeTranslationMap = {
   "텔레그램": "Telegram",
   "모의 선물거래 플랫폼": "暗号資産先物取引シミュレーター",
   "내 자산": "自分の資産",
+  "펀딩비": "資金調達料",
+  "현재 펀딩비율": "現在の資金調達率",
+  "다음 펀딩까지": "次回資金調達まで",
+  "시장 정보": "市場情報",
   "보유 자산": "保有資産",
   "사용 가능": "利用可能",
   "사용 중": "使用中",
   "주문가": "注文価格",
-  "체결가": "約定価格",
   "상태": "状態",
+  "강제청산": "強制決済",
+  "유지중": "保有中",
+  "청산": "決済",
   "일시": "日時",
   "금액": "金額",
+  "총 잔고": "総残高",
+  "손익": "損益",
+  "총 자산 (증거금 포함)": "総資産 (証拠金含む)",
   "펀딩비율": "資金調達率",
   "개인정보처리방침": "プライバシーポリシー",
   "서비스 이용약관": "利用規約",
@@ -406,18 +541,147 @@ const ja: RuntimeTranslationMap = {
     "本方針は2026年4月18日から適用されます。",
   "문의": "お問い合わせ",
   "어드민 인덱스 페이지입니다": "管理者インデックスページ",
+  "💰 자산 현황": "💰 資産状況",
+  "📊 거래 통계": "📊 取引統計",
+  "✏️ 닉네임 변경": "✏️ ニックネーム変更",
+  "🔒 비밀번호 변경": "🔒 パスワード変更",
+  "닉네임이 변경됐어요!": "ニックネームを変更しました！",
+  "비밀번호가 변경됐어요!": "パスワードを変更しました！",
+  "금액을 입력해주세요.": "金額を入力してください。",
+  "수량을 입력해주세요.": "数量を入力してください。",
+  "지정가를 입력해주세요.": "指値価格を入力してください。",
+  "주문 실패": "注文に失敗しました",
+  "주문 완료!": "注文完了！",
+  "마진타입 변경 완료!": "マージンタイプを変更しました！",
+  "레버리지 변경 완료!": "レバレッジを変更しました！",
+  "증거금 추가 완료!": "証拠金を追加しました！",
+  "TP/SL 설정 완료!": "TP/SLを設定しました！",
+  "청산 실패": "決済に失敗しました",
+  "취소 실패": "キャンセルに失敗しました",
+  "포지션이 강제청산됐어요!": "ポジションが強制決済されました！",
+  "TP 목표가에 도달해 청산됐어요!": "TP目標価格に到達し決済されました！",
+  "SL 손절가에 도달해 청산됐어요!": "SL損切り価格に到達し決済されました！",
+  "지정가 주문이 체결됐어요!": "指値注文が約定しました！",
+  "펀딩비가 적용됐어요!": "資金調達料が適用されました！",
   "첫 거래 완료!": "初回取引完了！",
   "거래 시작하기 🚀": "取引を始める",
+  "BITHAMA에 오신 걸 환영해요!": "BITHAMAへようこそ！",
   "처음이시라면 간단한 튜토리얼을 통해 선물거래를 체험해보세요.":
     "初めての場合は、簡単なチュートリアルで先物取引を体験しましょう。",
+  "튜토리얼 시작하기 🚀": "チュートリアルを始める",
+  "건너뛰기": "スキップ",
+  "아래 포지션탭에서 포지션을 확인하고 청산해보세요!":
+    "下のポジションタブでポジションを確認し、決済してみましょう！",
+  "📋 여기서 거래 내역을 확인하세요": "📋 ここで取引内容を確認できます",
+  "목표가/손절가 설정": "利確/損切り価格を設定",
+  "청산가 조정을": "清算価格を調整する",
+  "위한 추가 증거금": "ための追加証拠金",
+  "포지션 카드 공유하기": "ポジションカードを共有",
+  "포지션 종료 및 손익": "ポジションを終了し損益を",
+  "확정": "確定",
+  "← 이전": "<- 前へ",
+  "완료! 🎉": "完了！",
+  "다음 →": "次へ ->",
+  "버튼을 클릭하면 넘어가요 →": "ボタンをクリックすると進みます ->",
   "주문하면 자동으로 넘어가요 →": "注文すると自動で進みます ->",
+  "수량을 입력해주세요. 💡 25%/50%/75%/100% 버튼을 눌러보세요!":
+    "数量を入力してください。25%/50%/75%/100%ボタンを試してください！",
+  "잔고가 부족해요. 💡 25%/50%/75%/100% 버튼을 눌러보세요!":
+    "残高が不足しています。25%/50%/75%/100%ボタンを試してください！",
 };
+
+const runtimePatterns: Record<Exclude<Locale, "ko">, RuntimePattern[]> = {
+  en: [
+    {
+      pattern: /^(\d+(?:\.\d+)?)회$/,
+      replace: (match) => `${match[1]} trades`,
+    },
+    {
+      pattern: /^현재\s+(\d+(?:\.\d+)?)x\s+→\s+상향만 가능해요$/,
+      replace: (match) => `Current ${match[1]}x -> increases only`,
+    },
+    {
+      pattern: /^(\d+(?:\.\d+)?)x보다 높게만 설정 가능해요\.$/,
+      replace: (match) => `Set higher than ${match[1]}x.`,
+    },
+    {
+      pattern: /^포지션 \((\d+)\)$/,
+      replace: (match) => `Positions (${match[1]})`,
+    },
+    {
+      pattern: /^주문 \((\d+)\)$/,
+      replace: (match) => `Orders (${match[1]})`,
+    },
+    {
+      pattern: /진입가$/,
+      replace: "Entry",
+    },
+    {
+      pattern: /청산가$/,
+      replace: "Liq. price",
+    },
+    {
+      pattern: /지정가$/,
+      replace: "Limit",
+    },
+  ],
+  ja: [
+    {
+      pattern: /^(\d+(?:\.\d+)?)회$/,
+      replace: (match) => `${match[1]}回`,
+    },
+    {
+      pattern: /^현재\s+(\d+(?:\.\d+)?)x\s+→\s+상향만 가능해요$/,
+      replace: (match) => `現在 ${match[1]}x -> 上げる場合のみ可能です`,
+    },
+    {
+      pattern: /^(\d+(?:\.\d+)?)x보다 높게만 설정 가능해요\.$/,
+      replace: (match) => `${match[1]}xより高く設定してください。`,
+    },
+    {
+      pattern: /^포지션 \((\d+)\)$/,
+      replace: (match) => `ポジション (${match[1]})`,
+    },
+    {
+      pattern: /^주문 \((\d+)\)$/,
+      replace: (match) => `注文 (${match[1]})`,
+    },
+    {
+      pattern: /진입가$/,
+      replace: "参入価格",
+    },
+    {
+      pattern: /청산가$/,
+      replace: "清算価格",
+    },
+    {
+      pattern: /지정가$/,
+      replace: "指値",
+    },
+  ],
+};
+
+function translateRuntimePattern(locale: Exclude<Locale, "ko">, value: string) {
+  for (const { pattern, replace } of runtimePatterns[locale]) {
+    const match = value.match(pattern);
+    if (!match) continue;
+
+    if (typeof replace === "function") {
+      return replace(match);
+    }
+
+    return value.replace(pattern, replace);
+  }
+
+  return null;
+}
 
 export function translateRuntimeText(locale: Locale, value: string) {
   if (locale === "ko") return value;
 
   const dictionary = locale === "ja" ? ja : en;
-  const translated = dictionary[value.trim()];
+  const trimmed = value.trim();
+  const translated = dictionary[trimmed] ?? translateRuntimePattern(locale, trimmed);
   if (!translated) return value;
 
   const leading = value.match(/^\s*/)?.[0] ?? "";
@@ -428,5 +692,6 @@ export function translateRuntimeText(locale: Locale, value: string) {
 export function hasRuntimeTranslation(locale: Locale, value: string) {
   if (locale === "ko") return false;
   const dictionary = locale === "ja" ? ja : en;
-  return Boolean(dictionary[value.trim()]);
+  const trimmed = value.trim();
+  return Boolean(dictionary[trimmed] ?? translateRuntimePattern(locale, trimmed));
 }

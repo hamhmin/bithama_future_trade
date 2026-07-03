@@ -21,6 +21,14 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "이메일 또는 비밀번호가 틀렸어요.": "Email or password is incorrect.",
     "로그인 성공!": "Login successful!",
     "로그아웃 성공!": "Logout successful!",
+    "이메일과 비밀번호를 입력해주세요.": "Please enter email and password.",
+    "닉네임을 입력해주세요.": "Please enter a nickname.",
+    "모든 항목을 입력해주세요.": "Please fill in all fields.",
+    "오류가 발생했어요.": "Something went wrong.",
+    "로그인 실패": "Login failed.",
+    "회원가입 실패": "Sign up failed.",
+    "게스트 로그인 실패": "Guest login failed.",
+    "회원가입 성공! 로그인해주세요.": "Sign up complete! Please log in.",
     "닉네임 변경 완료!": "Nickname updated!",
     "유저를 찾을 수 없어요.": "User not found.",
     "현재 비밀번호가 틀렸어요.": "Current password is incorrect.",
@@ -64,6 +72,8 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "잘못된 마진타입이에요.": "Invalid margin type.",
     "포지션이나 주문이 있으면 마진타입을 변경할 수 없어요.":
       "You cannot change margin type while positions or orders exist.",
+    "포지션 보유 중엔 마진타입을 변경할 수 없어요. 모든 포지션을 청산 후 변경해주세요.":
+      "You cannot change margin type while holding a position. Close all positions first.",
     "마진타입 변경 완료!": "Margin type updated!",
     "Long TP는 진입가보다 높아야 해요.":
       "Long TP must be higher than entry price.",
@@ -77,6 +87,9 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "지갑을 찾을 수 없어요.": "Wallet not found.",
     "펀딩비가 적용됐어요!": "Funding fee applied!",
     "지정가 주문이 체결됐어요!": "Limit order filled!",
+    "포지션이 강제청산됐어요!": "Position was liquidated!",
+    "TP 목표가에 도달해 청산됐어요!": "TP reached. Position closed!",
+    "SL 손절가에 도달해 청산됐어요!": "SL reached. Position closed!",
   },
   ja: {
     "로그인이 필요해요.": "ログインが必要です。",
@@ -96,6 +109,14 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "이메일 또는 비밀번호가 틀렸어요.": "メールまたはパスワードが間違っています。",
     "로그인 성공!": "ログイン成功！",
     "로그아웃 성공!": "ログアウト成功！",
+    "이메일과 비밀번호를 입력해주세요.": "メールとパスワードを入力してください。",
+    "닉네임을 입력해주세요.": "ニックネームを入力してください。",
+    "모든 항목을 입력해주세요.": "すべての項目を入力してください。",
+    "오류가 발생했어요.": "エラーが発生しました。",
+    "로그인 실패": "ログインに失敗しました。",
+    "회원가입 실패": "登録に失敗しました。",
+    "게스트 로그인 실패": "ゲストログインに失敗しました。",
+    "회원가입 성공! 로그인해주세요.": "登録完了！ログインしてください。",
     "닉네임 변경 완료!": "ニックネームを変更しました！",
     "유저를 찾을 수 없어요.": "ユーザーが見つかりません。",
     "현재 비밀번호가 틀렸어요.": "現在のパスワードが間違っています。",
@@ -139,6 +160,8 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "잘못된 마진타입이에요.": "無効なマージンタイプです。",
     "포지션이나 주문이 있으면 마진타입을 변경할 수 없어요.":
       "ポジションまたは注文がある場合、マージンタイプは変更できません。",
+    "포지션 보유 중엔 마진타입을 변경할 수 없어요. 모든 포지션을 청산 후 변경해주세요.":
+      "ポジション保有中はマージンタイプを変更できません。すべてのポジションを決済してから変更してください。",
     "마진타입 변경 완료!": "マージンタイプを変更しました！",
     "Long TP는 진입가보다 높아야 해요.": "LongのTPは参入価格より高くしてください。",
     "Short TP는 진입가보다 낮아야 해요.": "ShortのTPは参入価格より低くしてください。",
@@ -148,6 +171,9 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "지갑을 찾을 수 없어요.": "ウォレットが見つかりません。",
     "펀딩비가 적용됐어요!": "資金調達料が適用されました！",
     "지정가 주문이 체결됐어요!": "指値注文が約定しました！",
+    "포지션이 강제청산됐어요!": "ポジションが強制決済されました！",
+    "TP 목표가에 도달해 청산됐어요!": "TP目標価格に到達し決済されました！",
+    "SL 손절가에 도달해 청산됐어요!": "SL損切り価格に到達し決済されました！",
   },
 };
 
