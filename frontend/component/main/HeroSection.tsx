@@ -1,56 +1,41 @@
-"use client";
-
-import dynamic from "next/dynamic";
 import Link from "next/link";
+import type { LandingDictionary } from "@/lib/i18n";
 
-const Spline = dynamic(
-  () => import("@splinetool/react-spline").then((mod) => mod.default),
-  {
-    ssr: false,
-    loading: () => <div className="w-full h-full bg-transparent" />,
-  },
-);
-
-export default function HeroSection() {
+export default function HeroSection({
+  dictionary,
+}: {
+  dictionary: LandingDictionary["hero"];
+}) {
   return (
-    <section className="relative w-full md:h-screen flex items-center overflow-hidden bg-[#050d1a] pt-[40px] md:pt-0 h-full">
-      {/* 배경 그라디언트 */}
+    <section className="relative w-full md:h-screen flex items-center overflow-hidden bg-[#050d1a] pt-[88px] md:pt-0 h-full">
       <div className="absolute inset-0 bg-gradient-to-br from-[#0c1f3d]/60 via-[#050d1a] to-[#071428]/60" />
-
-      {/* 배경 글로우 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px]" />
       <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-blue-800/20 rounded-full blur-[100px]" />
 
-      {/* Spline 3D */}
-      <div className="absolute inset-0 z-0">
-        {/* <Spline scene="https://prod.spline.design/iowSbsZO4Ar2i8a8/scene.splinecode" /> */}
-        {/* <Spline scene="https://prod.spline.design/fsrWv3KngUZ0hQfv/scene.splinecode" /> */}
-        {/* <Spline scene="https://prod.spline.design/fsrWv3KngUZ0hQfv/scene.splinecode" /> */}
-      </div>
-
-      {/* 텍스트 */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-6 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-10 w-full">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-            실시간 모의 선물거래
+            {dictionary.badge}
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight mb-6">
-            실전처럼
+            {dictionary.titleTop}
             <br />
             <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-blue-600 bg-clip-text text-transparent">
-              트레이딩
+              {dictionary.titleAccent}
             </span>
-            을
             <br />
-            연습하세요
+            {dictionary.titleBottom}
           </h1>
 
           <p className="text-gray-400 text-lg mb-8 leading-relaxed">
-            바이낸스 실시간 데이터로 선물거래를 연습하세요.
-            <br />
-            10만 USDT로 시작해 실력을 키우고 실전에 도전하세요.
+            {dictionary.descriptionLines.map((line) => (
+              <span key={line}>
+                {line}
+                <br />
+              </span>
+            ))}
           </p>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -58,24 +43,20 @@ export default function HeroSection() {
               href="/future"
               className="px-8 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-sky-500 to-blue-700 hover:opacity-90 transition-opacity shadow-lg shadow-sky-500/20"
             >
-              무료로 시작하기 →
+              {dictionary.primaryCta}
             </Link>
             <Link
               href="#features"
               className="px-8 py-4 rounded-xl text-base text-gray-300 border border-[#1e3a5f] hover:border-sky-500/50 hover:text-white transition-colors"
             >
-              더 알아보기
+              {dictionary.secondaryCta}
             </Link>
           </div>
 
           <div className="flex items-start md:items-center gap-8 mt-12 flex-wrap md:flex-nowrap">
-            {[
-              { label: "초기 지급 USDT", value: "100,000" },
-              { label: "레버리지", value: "최대 100x" },
-              { label: "실시간 데이터", value: "바이낸스" },
-            ].map((stat, i) => (
+            {dictionary.stats.map((stat) => (
               <div
-                key={i}
+                key={stat.label}
                 className="flex flex-col w-full text-center md:text-left"
               >
                 <span className="text-white font-bold text-xl">

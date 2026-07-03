@@ -3,8 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import LanguageSwitcher from "@/component/main/LanguageSwitcher";
+import {
+  defaultLocale,
+  getDictionary,
+  getLocalePath,
+  type LandingDictionary,
+  type Locale,
+} from "@/lib/i18n";
 
-export default function MainHeader() {
+export default function MainHeader({
+  locale = defaultLocale,
+  dictionary,
+}: {
+  locale?: Locale;
+  dictionary?: LandingDictionary["header"];
+}) {
+  const labels = dictionary ?? getDictionary(locale).header;
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState("");
@@ -38,7 +53,7 @@ export default function MainHeader() {
     });
     setIsLoggedIn(false);
     router.refresh();
-    router.push("/");
+    router.push(getLocalePath(locale));
   };
 
   return (
@@ -49,8 +64,8 @@ export default function MainHeader() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-3">
+        <Link href={getLocalePath(locale)} className="flex items-center gap-2">
           <span className="text-xl font-bold bg-gradient-to-r from-sky-400 to-blue-600 bg-clip-text text-transparent">
             BITHAMA
           </span>
@@ -58,51 +73,52 @@ export default function MainHeader() {
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-gray-400">
           <Link href="/future" className="hover:text-white transition-colors">
-            거래소
+            {labels.exchange}
           </Link>
           <Link href="#features" className="hover:text-white transition-colors">
-            기능
+            {labels.features}
           </Link>
           <Link href="#about" className="hover:text-white transition-colors">
-            소개
+            {labels.about}
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
+          <LanguageSwitcher locale={locale} label={labels.language} />
           {isLoggedIn ? (
             <>
               <Link
                 href="/profile"
-                className="text-sm text-gray-400 hover:text-white transition-colors"
+                className="hidden sm:inline text-sm text-gray-400 hover:text-white transition-colors"
               >
                 {nickname}
               </Link>
               <Link
                 href="/future"
-                className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-sky-500 to-blue-700 hover:opacity-90 transition-opacity"
+                className="px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-bold text-white bg-gradient-to-r from-sky-500 to-blue-700 hover:opacity-90 transition-opacity"
               >
-                거래 시작
+                {labels.startTrading}
               </Link>
               <button
                 onClick={handleLogout}
-                className="px-3 py-2 rounded-lg text-sm text-gray-400 border border-[#1e3a5f] hover:border-sky-500/50 hover:text-white transition-colors"
+                className="hidden sm:inline px-3 py-2 rounded-lg text-sm text-gray-400 border border-[#1e3a5f] hover:border-sky-500/50 hover:text-white transition-colors"
               >
-                로그아웃
+                {labels.logout}
               </button>
             </>
           ) : (
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white transition-colors"
+                className="hidden sm:inline px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white transition-colors"
               >
-                로그인
+                {labels.login}
               </Link>
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-sky-500 to-blue-700 hover:opacity-90 transition-opacity"
+                className="px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-bold text-white bg-gradient-to-r from-sky-500 to-blue-700 hover:opacity-90 transition-opacity"
               >
-                시작하기
+                {labels.start}
               </Link>
             </>
           )}

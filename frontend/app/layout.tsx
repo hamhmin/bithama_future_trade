@@ -1,40 +1,48 @@
 import QueryProvider from "@/component/common/QueryProvider";
 
 import "./globals.css";
-import Link from "next/link";
+import Script from "next/script";
 import { Toaster } from "react-hot-toast";
+import { headers } from "next/headers";
+import {
+  defaultLocale,
+  getAlternateLanguages,
+  getDictionary,
+  getLocale,
+  siteUrl,
+} from "@/lib/i18n";
+
+const GA_MEASUREMENT_ID = "G-91NCN9JLV2";
+const defaultDictionary = getDictionary(defaultLocale);
+
 export const metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "BITHAMA - 모의 선물거래 플랫폼",
+    default: defaultDictionary.metadata.defaultTitle,
     // template: "%s | BITHAMA",
   },
-  description:
-    "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요. 가상 자산으로 리스크 없이 트레이딩을 경험해보세요.",
-  keywords: [
-    "모의 선물거래",
-    "가상 선물거래",
-    "비트코인 거래 연습",
-    "선물거래 시뮬레이터",
-    "BITHAMA",
-  ],
+  description: defaultDictionary.metadata.description,
+  keywords: [...defaultDictionary.metadata.keywords],
+  alternates: {
+    canonical: "/ko",
+    languages: getAlternateLanguages(),
+  },
   openGraph: {
-    title: "BITHAMA - 모의 선물거래 플랫폼",
-    description:
-      "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요.",
-    url: "https://bithama.com",
+    title: defaultDictionary.metadata.defaultTitle,
+    description: defaultDictionary.metadata.description,
+    url: `${siteUrl}/ko`,
     siteName: "BITHAMA",
     locale: "ko_KR",
     type: "website",
     images: [
-      { url: "https://bithama.com/og-image.png", width: 1200, height: 630 },
+      { url: `${siteUrl}/og-image.png`, width: 1200, height: 630 },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BITHAMA - 모의 선물거래 플랫폼",
-    description:
-      "바이낸스 실시간 데이터로 실전과 동일한 환경에서 선물거래를 연습하세요.",
-    images: ["https://bithama.com/og-image.png"],
+    title: defaultDictionary.metadata.defaultTitle,
+    description: defaultDictionary.metadata.description,
+    images: [`${siteUrl}/og-image.png`],
   },
   robots: {
     index: true,
@@ -42,13 +50,16 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
+  const locale = getLocale(requestHeaders.get("x-bithama-locale") ?? undefined);
+
   return (
-    <html lang="en" className={`h-full antialiased`}>
+    <html lang={locale} className={`h-full antialiased`}>
       <head>
         <meta
           name="naver-site-verification"
@@ -56,6 +67,18 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
         <QueryProvider>
           <Toaster
             position="bottom-right"
