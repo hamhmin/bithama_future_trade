@@ -1,4 +1,6 @@
 import QueryProvider from "@/component/common/QueryProvider";
+import I18nProvider from "@/component/common/I18nProvider";
+import GlobalLanguageSwitcher from "@/component/common/GlobalLanguageSwitcher";
 
 import "./globals.css";
 import Script from "next/script";
@@ -79,33 +81,36 @@ export default async function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
-        <QueryProvider>
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: "#1f2937",
-                color: "#fff",
-                border: "1px solid #374151",
-                fontSize: "13px",
-              },
-              success: {
-                iconTheme: {
-                  primary: "#22c55e",
-                  secondary: "#fff",
+        <I18nProvider locale={locale}>
+          <QueryProvider>
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: "#1f2937",
+                  color: "#fff",
+                  border: "1px solid #374151",
+                  fontSize: "13px",
                 },
-              },
-              error: {
-                iconTheme: {
-                  primary: "#ef4444",
-                  secondary: "#fff",
+                success: {
+                  iconTheme: {
+                    primary: "#22c55e",
+                    secondary: "#fff",
+                  },
                 },
-              },
-              duration: 3000,
-            }}
-          />
-          {children}
-        </QueryProvider>
+                error: {
+                  iconTheme: {
+                    primary: "#ef4444",
+                    secondary: "#fff",
+                  },
+                },
+                duration: 3000,
+              }}
+            />
+            <GlobalLanguageSwitcher />
+            {children}
+          </QueryProvider>
+        </I18nProvider>
       </body>
     </html>
   );

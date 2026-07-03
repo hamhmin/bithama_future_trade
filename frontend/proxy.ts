@@ -14,24 +14,7 @@ function detectFromCountry(country: string | null): Locale | null {
   const code = country.toUpperCase();
   if (code === "KR") return "ko";
   if (code === "JP") return "ja";
-
-  if (
-    [
-      "US",
-      "GB",
-      "CA",
-      "AU",
-      "NZ",
-      "IE",
-      "SG",
-      "PH",
-      "IN",
-    ].includes(code)
-  ) {
-    return "en";
-  }
-
-  return null;
+  return "en";
 }
 
 function detectFromAcceptLanguage(value: string | null): Locale | null {

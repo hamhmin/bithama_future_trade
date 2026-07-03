@@ -11,6 +11,7 @@ import futureRouter from "./routes/future.js";
 import cookieParser from "cookie-parser";
 import { userSocketMap } from "./websocket.js";
 import { startFundingScheduler } from "./funding.js";
+import { i18nMiddleware } from "./middleware/i18n.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use(i18nMiddleware);
 app.get("/", (req, res) => {
   res.json({ message: "bit-hama backend running!" });
 });
