@@ -278,6 +278,21 @@ const en: RuntimeTranslationMap = {
     "If this is your first time, try a quick futures trading tutorial.",
   "튜토리얼 시작하기 🚀": "Start tutorial",
   "건너뛰기": "Skip",
+  "1단계: 레버리지 버튼 클릭": "Step 1: Click the leverage button",
+  "레버리지는 내 증거금의 몇 배로 거래할지 결정해요. 높을수록 수익과 손실이 커져요. 레버리지 버튼을 클릭해보세요!":
+    "Leverage decides how many times your margin you trade with. Higher leverage increases both profit and loss. Click the leverage button!",
+  "2단계: 레버리지 설정": "Step 2: Set leverage",
+  "원하는 레버리지를 선택하고 확인을 눌러주세요!":
+    "Select your preferred leverage and press confirm!",
+  "3단계: 수량 입력": "Step 3: Enter amount",
+  "거래할 BTC 수량을 입력해요. 아래 25/50/75/100% 버튼으로 빠르게 입력할 수도 있어요!":
+    "Enter the BTC amount to trade. You can also use the 25/50/75/100% buttons below!",
+  "4단계: 주문하기": "Step 4: Place an order",
+  "Long은 가격이 오를 때, Short은 가격이 내릴 때 수익이 나요. 주문 버튼을 눌러보세요!":
+    "Long profits when the price rises, and Short profits when the price falls. Press the order button!",
+  "🎉 첫 거래 완료!": "🎉 First trade complete!",
+  "포지션/거래내역/자산 탭에서 방금 거래한 내역을 확인할 수 있어요!":
+    "You can check this trade in the Positions, Trade History, and Assets tabs!",
   "아래 포지션탭에서 포지션을 확인하고 청산해보세요!":
     "Check your position in the Positions tab and try closing it!",
   "📋 여기서 거래 내역을 확인하세요": "📋 Check your trading details here",
@@ -570,6 +585,21 @@ const ja: RuntimeTranslationMap = {
     "初めての場合は、簡単なチュートリアルで先物取引を体験しましょう。",
   "튜토리얼 시작하기 🚀": "チュートリアルを始める",
   "건너뛰기": "スキップ",
+  "1단계: 레버리지 버튼 클릭": "ステップ1: レバレッジボタンをクリック",
+  "레버리지는 내 증거금의 몇 배로 거래할지 결정해요. 높을수록 수익과 손실이 커져요. 레버리지 버튼을 클릭해보세요!":
+    "レバレッジは証拠金の何倍で取引するかを決めます。高いほど利益と損失が大きくなります。レバレッジボタンをクリックしてみましょう！",
+  "2단계: 레버리지 설정": "ステップ2: レバレッジ設定",
+  "원하는 레버리지를 선택하고 확인을 눌러주세요!":
+    "希望するレバレッジを選択して確認を押してください！",
+  "3단계: 수량 입력": "ステップ3: 数量入力",
+  "거래할 BTC 수량을 입력해요. 아래 25/50/75/100% 버튼으로 빠르게 입력할 수도 있어요!":
+    "取引するBTC数量を入力します。下の25/50/75/100%ボタンでも素早く入力できます！",
+  "4단계: 주문하기": "ステップ4: 注文する",
+  "Long은 가격이 오를 때, Short은 가격이 내릴 때 수익이 나요. 주문 버튼을 눌러보세요!":
+    "Longは価格が上がると、Shortは価格が下がると利益が出ます。注文ボタンを押してみましょう！",
+  "🎉 첫 거래 완료!": "🎉 初回取引完了！",
+  "포지션/거래내역/자산 탭에서 방금 거래한 내역을 확인할 수 있어요!":
+    "ポジション/取引履歴/資産タブで今の取引内容を確認できます！",
   "아래 포지션탭에서 포지션을 확인하고 청산해보세요!":
     "下のポジションタブでポジションを確認し、決済してみましょう！",
   "📋 여기서 거래 내역을 확인하세요": "📋 ここで取引内容を確認できます",
