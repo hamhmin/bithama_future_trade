@@ -302,6 +302,11 @@ const en: RuntimeTranslationMap = {
   "포지션 카드 공유하기": "Share a position card",
   "포지션 종료 및 손익": "Close the position and",
   "확정": "lock in PnL",
+  "→ 목표가/손절가 설정": "-> Set take-profit / stop-loss",
+  "→ 청산가 조정을 위한 추가 증거금":
+    "-> Add margin to adjust the liquidation price",
+  "→ 포지션 카드 공유하기": "-> Share a position card",
+  "→ 포지션 종료 및 손익 확정": "-> Close the position and lock in PnL",
   "← 이전": "<- Previous",
   "완료! 🎉": "Done!",
   "다음 →": "Next ->",
@@ -609,6 +614,11 @@ const ja: RuntimeTranslationMap = {
   "포지션 카드 공유하기": "ポジションカードを共有",
   "포지션 종료 및 손익": "ポジションを終了し損益を",
   "확정": "確定",
+  "→ 목표가/손절가 설정": "-> 利確/損切り価格を設定",
+  "→ 청산가 조정을 위한 추가 증거금":
+    "-> 清算価格を調整するための追加証拠金",
+  "→ 포지션 카드 공유하기": "-> ポジションカードを共有",
+  "→ 포지션 종료 및 손익 확정": "-> ポジションを終了し損益を確定",
   "← 이전": "<- 前へ",
   "완료! 🎉": "完了！",
   "다음 →": "次へ ->",
@@ -706,12 +716,20 @@ function translateRuntimePattern(locale: Exclude<Locale, "ko">, value: string) {
   return null;
 }
 
+function normalizeRuntimeKey(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 export function translateRuntimeText(locale: Locale, value: string) {
   if (locale === "ko") return value;
 
   const dictionary = locale === "ja" ? ja : en;
   const trimmed = value.trim();
-  const translated = dictionary[trimmed] ?? translateRuntimePattern(locale, trimmed);
+  const normalized = normalizeRuntimeKey(value);
+  const translated =
+    dictionary[trimmed] ??
+    dictionary[normalized] ??
+    translateRuntimePattern(locale, normalized);
   if (!translated) return value;
 
   const leading = value.match(/^\s*/)?.[0] ?? "";
@@ -723,5 +741,10 @@ export function hasRuntimeTranslation(locale: Locale, value: string) {
   if (locale === "ko") return false;
   const dictionary = locale === "ja" ? ja : en;
   const trimmed = value.trim();
-  return Boolean(dictionary[trimmed] ?? translateRuntimePattern(locale, trimmed));
+  const normalized = normalizeRuntimeKey(value);
+  return Boolean(
+    dictionary[trimmed] ??
+      dictionary[normalized] ??
+      translateRuntimePattern(locale, normalized),
+  );
 }
