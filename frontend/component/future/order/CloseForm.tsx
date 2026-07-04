@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useFutureStore } from "@/store/useFutureStore";
 import toast from "react-hot-toast";
 import LoadingDots from "@/component/common/LoadingDots";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { fetchPositions } from "@/lib/queries";
+import { useI18n } from "@/component/common/I18nProvider";
 
 type Position = {
   id: number;
@@ -26,7 +27,7 @@ export default function CloseForm({
   onSuccess: () => void;
   closeBtnRef?: React.RefObject<HTMLButtonElement | null>;
 }) {
-  const queryClient = useQueryClient();
+  const { translate } = useI18n();
   const currentPrice = useFutureStore((state) =>
     state.tradeData ? parseFloat(state.tradeData.price) : 0,
   );
@@ -72,15 +73,15 @@ export default function CloseForm({
 
   const handleSubmit = async () => {
     if (!currentSelectedPos) {
-      setMessage("청산할 포지션을 선택해주세요.");
+      setMessage(translate("청산할 포지션을 선택해주세요."));
       return;
     }
     if (!size || parseFloat(size) <= 0) {
-      setMessage("청산할 수량을 입력해주세요.");
+      setMessage(translate("청산할 수량을 입력해주세요."));
       return;
     }
     if (orderType === "limit" && (!price || parseFloat(price) <= 0)) {
-      setMessage("지정가를 입력해주세요.");
+      setMessage(translate("지정가를 입력해주세요."));
       return;
     }
 
@@ -116,7 +117,7 @@ export default function CloseForm({
         onSuccess();
       }
     } catch {
-      setMessage("서버 오류");
+      setMessage(translate("서버 오류"));
     } finally {
       setLoading(false);
     }
@@ -125,7 +126,7 @@ export default function CloseForm({
   if (positions.length === 0) {
     return (
       <div className="flex items-center justify-center h-24 text-gray-500 text-xs">
-        오픈 포지션이 없어요
+        {translate("오픈 포지션이 없어요")}
       </div>
     );
   }
@@ -167,7 +168,7 @@ export default function CloseForm({
                 : "text-gray-400 hover:text-white"
             }`}
           >
-            {t === "market" ? "시장가" : "지정가"}
+            {translate(t === "market" ? "시장가" : "지정가")}
           </button>
         ))}
       </div>
@@ -175,7 +176,9 @@ export default function CloseForm({
       {/* 지정가 입력 */}
       {orderType === "limit" && (
         <div className="flex flex-col gap-1">
-          <label className="text-gray-400 text-xs">청산가 (USDT)</label>
+          <label className="text-gray-400 text-xs">
+            {translate("청산가 (USDT)")}
+          </label>
           <input
             type="number"
             value={price}
@@ -189,9 +192,11 @@ export default function CloseForm({
       {/* 수량 입력 */}
       <div className="flex flex-col gap-1">
         <div className="flex justify-between text-xs text-gray-400">
-          <label>청산 수량 (BTC)</label>
+          <label>{translate("청산 수량 (BTC)")}</label>
           {currentSelectedPos && (
-            <span>보유: {currentSelectedPos.size} BTC</span>
+            <span>
+              {translate("보유:")} {currentSelectedPos.size} BTC
+            </span>
           )}
         </div>
         <input
@@ -218,7 +223,7 @@ export default function CloseForm({
                 : "text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-700"
             }`}
           >
-            {percent === 100 ? "전체" : `${percent}%`}
+            {percent === 100 ? translate("전체") : `${percent}%`}
           </button>
         ))}
       </div>
@@ -227,11 +232,11 @@ export default function CloseForm({
       {currentSelectedPos && closeSize > 0 && closePrice > 0 && (
         <div className="flex flex-col gap-1 bg-gray-800 rounded px-3 py-2 text-xs text-gray-400">
           <div className="flex justify-between">
-            <span>청산 수량</span>
+            <span>{translate("청산 수량")}</span>
             <span className="text-white">{closeSize} BTC</span>
           </div>
           <div className="flex justify-between">
-            <span>예상 손익</span>
+            <span>{translate("예상 손익")}</span>
             <span className={pnl >= 0 ? "text-green-400" : "text-red-400"}>
               {pnl >= 0 ? "+" : ""}
               {pnl.toFixed(2)} USDT
@@ -244,7 +249,9 @@ export default function CloseForm({
       {message && (
         <div
           className={`text-xs text-center py-1 rounded ${
-            message.includes("완료") ? "text-green-400" : "text-red-400"
+            message.includes(translate("완료"))
+              ? "text-green-400"
+              : "text-red-400"
           }`}
         >
           {message}
@@ -269,7 +276,7 @@ export default function CloseForm({
             <LoadingDots size="sm" color="white" />
           </div>
         ) : (
-          "포지션 청산"
+          translate("포지션 청산")
         )}
       </button>
     </div>

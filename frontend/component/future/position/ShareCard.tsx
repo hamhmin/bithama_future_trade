@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import domtoimage from "dom-to-image";
+import { useI18n } from "@/component/common/I18nProvider";
 
 type ShareCardProps = {
   position: {
@@ -15,14 +16,13 @@ type ShareCardProps = {
   currentPrice: number;
   onClose: () => void;
 };
-declare global {
-  interface Window {}
-}
+
 export default function ShareCard({
   position,
   currentPrice,
   onClose,
 }: ShareCardProps) {
+  const { translate } = useI18n();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const pnl =
@@ -53,7 +53,7 @@ export default function ShareCard({
     }
   };
   const handleTwitterShare = () => {
-    const text = `${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT\nROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%\nPnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT\n\n모의 선물거래 플랫폼 bithama.com`;
+    const text = `${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT\nROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%\nPnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT\n\n${translate("모의 선물거래 플랫폼")} bithama.com`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
       "_blank",
@@ -61,7 +61,7 @@ export default function ShareCard({
   };
 
   const handleTelegramShare = () => {
-    const text = `${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT\nROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%\nPnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT\n\n모의 선물거래 플랫폼`;
+    const text = `${position.side === "long" ? "Long" : "Short"} ${position.leverage}x BTCUSDT\nROE: ${roe >= 0 ? "+" : ""}${roe.toFixed(2)}%\nPnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDT\n\n${translate("모의 선물거래 플랫폼")}`;
     window.open(
       `https://t.me/share/url?url=https://bithama.com&text=${encodeURIComponent(text)}`,
       "_blank",
@@ -136,19 +136,25 @@ export default function ShareCard({
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs">진입가</span>
+              <span className="text-gray-500 text-xs">
+                {translate("진입가")}
+              </span>
               <span className="text-white text-sm font-bold">
                 ${position.entryPrice.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs">현재가</span>
+              <span className="text-gray-500 text-xs">
+                {translate("현재가")}
+              </span>
               <span className="text-white text-sm font-bold">
                 ${currentPrice.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs">수량</span>
+              <span className="text-gray-500 text-xs">
+                {translate("수량")}
+              </span>
               <span className="text-white text-sm font-bold">
                 {position.size} BTC
               </span>
@@ -157,7 +163,9 @@ export default function ShareCard({
 
           {/* 푸터 */}
           <div className="flex items-center justify-between border-t border-gray-700/50 pt-3">
-            <span className="text-gray-600 text-xs">모의 선물거래 플랫폼</span>
+            <span className="text-gray-600 text-xs">
+              {translate("모의 선물거래 플랫폼")}
+            </span>
             <span className="text-blue-400 text-xs">bithama.com</span>
           </div>
         </div>
@@ -168,26 +176,26 @@ export default function ShareCard({
             onClick={handleDownload}
             className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
           >
-            이미지 저장
+            {translate("이미지 저장")}
           </button>
           <button
             onClick={handleTwitterShare}
             className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-black hover:bg-gray-900 transition-colors"
           >
-            X 공유
+            {translate("X 공유")}
           </button>
           <button
             onClick={handleTelegramShare}
             className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#229ED9] hover:bg-[#1a8bc2] transition-colors"
           >
-            텔레그램
+            {translate("텔레그램")}
           </button>
 
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm text-gray-400 border border-gray-700 hover:border-gray-500 transition-colors"
           >
-            닫기
+            {translate("닫기")}
           </button>
         </div>
       </div>

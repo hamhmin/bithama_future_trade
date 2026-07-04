@@ -2,23 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/component/common/I18nProvider";
 
 export default function LoginPage() {
+  const { translate } = useI18n();
   const router = useRouter();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"success" | "error">("error");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email || !password) {
-      setMessage("이메일과 비밀번호를 입력해주세요.");
+      setMessageTone("error");
+      setMessage(translate("이메일과 비밀번호를 입력해주세요."));
       return;
     }
     if (isRegister && !nickname) {
-      setMessage("닉네임을 입력해주세요.");
+      setMessageTone("error");
+      setMessage(translate("닉네임을 입력해주세요."));
       return;
     }
 
@@ -42,12 +47,14 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(data.message ?? "오류가 발생했어요.");
+        setMessageTone("error");
+        setMessage(data.message ?? translate("오류가 발생했어요."));
         return;
       }
 
       if (isRegister) {
-        setMessage("회원가입 성공! 로그인해주세요.");
+        setMessageTone("success");
+        setMessage(translate("회원가입 성공! 로그인해주세요."));
         setIsRegister(false);
         setEmail("");
         setPassword("");
@@ -58,7 +65,8 @@ export default function LoginPage() {
         router.replace("/future");
       }
     } catch {
-      setMessage("서버 오류");
+      setMessageTone("error");
+      setMessage(translate("서버 오류"));
     } finally {
       setLoading(false);
     }
@@ -94,7 +102,8 @@ export default function LoginPage() {
         router.replace("/future");
       }
     } catch {
-      setMessage("게스트 로그인 실패");
+      setMessageTone("error");
+      setMessage(translate("게스트 로그인 실패"));
     } finally {
       setLoading(false);
     }
@@ -161,7 +170,7 @@ export default function LoginPage() {
         {message && (
           <p
             className={`text-xs text-center ${
-              message.includes("성공") ? "text-green-400" : "text-red-400"
+              messageTone === "success" ? "text-green-400" : "text-red-400"
             }`}
           >
             {message}

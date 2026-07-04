@@ -6,6 +6,7 @@ import { useFutureStore } from "@/store/useFutureStore";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { fetchPositions, fetchOrders } from "@/lib/queries";
+import { useI18n } from "@/component/common/I18nProvider";
 
 const INTERVALS = [
   { label: "1m", seconds: 60 },
@@ -35,6 +36,7 @@ type Order = {
 };
 
 const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
+  const { translate } = useI18n();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartInterval, setChartInterval] = useState(() => {
     if (typeof window !== "undefined") {
@@ -307,7 +309,7 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
         lineWidth: 1,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 진입가`,
+        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x ${translate("진입가")}`,
       });
       priceLineRefs.current.push(entryLine);
 
@@ -317,7 +319,7 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
         lineWidth: 1,
         lineStyle: 3,
         axisLabelVisible: true,
-        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x 청산가`,
+        title: `${pos.side === "long" ? "Long" : "Short"} ${pos.leverage}x ${translate("청산가")}`,
       });
       priceLineRefs.current.push(liqLine);
 
@@ -354,11 +356,11 @@ const TradingChart = ({ initialCandles = [] }: { initialCandles?: any[] }) => {
         lineWidth: 1,
         lineStyle: 1,
         axisLabelVisible: true,
-        title: `${order.side === "long" ? "Long" : "Short"} 지정가`,
+        title: `${order.side === "long" ? "Long" : "Short"} ${translate("지정가")}`,
       });
       priceLineRefs.current.push(orderLine);
     });
-  }, [positions, orders]);
+  }, [positions, orders, translate]);
 
   return (
     <div className="w-full h-full flex flex-col">
