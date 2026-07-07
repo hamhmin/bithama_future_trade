@@ -97,6 +97,7 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "지갑과 거래 기록이 초기화됐어요.":
       "Wallet and trading history have been reset.",
     "회원이 삭제됐어요.": "Member deleted.",
+    "랭킹을 찾을 수 없어요.": "Ranking not found.",
   },
   ja: {
     "로그인이 필요해요.": "ログインが必要です。",
@@ -188,6 +189,7 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "회원 정보가 수정됐어요.": "会員情報を修正しました。",
     "지갑과 거래 기록이 초기화됐어요.": "ウォレットと取引履歴を初期化しました。",
     "회원이 삭제됐어요.": "会員を削除しました。",
+    "랭킹을 찾을 수 없어요.": "ランキングが見つかりません。",
   },
 };
 

@@ -15,7 +15,10 @@ type RankingRow = {
   lockedMargin: number;
   unrealizedPnl: number;
   realizedPnl: number;
+  periodPnl: number;
+  rankScore: number;
   profitRate: number;
+  periodProfitRate: number;
   openPositionCount: number;
   closedPositionCount: number;
   filledOrderCount: number;
@@ -25,8 +28,18 @@ type RankingRow = {
 
 type RankingResponse = {
   latestPrice: number;
+  period: RankingPeriod;
   rankings: RankingRow[];
 };
+
+type MyRankingResponse = {
+  latestPrice: number;
+  period: RankingPeriod;
+  ranking: RankingRow;
+  totalUsers: number;
+};
+
+type RankingPeriod = "today" | "week" | "month" | "all";
 
 function formatNumber(value: number, digits = 2) {
   return value.toLocaleString(undefined, {
@@ -41,6 +54,8 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [scope, setScope] = useState<"all" | "member" | "guest">("all");
+  const [period, setPeriod] = useState<RankingPeriod>("week");
+  const [myRanking, setMyRanking] = useState<MyRankingResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +65,7 @@ export default function RankingPage() {
       setError("");
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ranking`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/ranking?period=${period}`,
           { credentials: "include" },
         );
         const json = await res.json();
@@ -65,13 +80,35 @@ export default function RankingPage() {
       }
     }
 
-    load();
-    const interval = window.setInterval(load, 30000);
+    async function loadMe() {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/ranking/me?period=${period}`,
+          { credentials: "include" },
+        );
+        if (!res.ok) {
+          if (!cancelled) setMyRanking(null);
+          return;
+        }
+        const json = await res.json();
+        if (!cancelled) setMyRanking(json);
+      } catch {
+        if (!cancelled) setMyRanking(null);
+      }
+    }
+
+    const refresh = () => {
+      load();
+      loadMe();
+    };
+
+    refresh();
+    const interval = window.setInterval(refresh, 30000);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, []);
+  }, [period]);
 
   const rows = useMemo(() => {
     const rankings = data?.rankings ?? [];
@@ -81,6 +118,7 @@ export default function RankingPage() {
   }, [data, scope]);
 
   const topThree = rows.slice(0, 3);
+  const scoreLabel = period === "all" ? "총 자산" : "기간 손익";
 
   return (
     <main className="min-h-screen bg-[#050d1a] text-white px-4 py-8 md:px-8">
@@ -110,6 +148,27 @@ export default function RankingPage() {
 
         <div className="flex flex-wrap gap-2">
           {[
+            ["today", "오늘"],
+            ["week", "이번 주"],
+            ["month", "이번 달"],
+            ["all", "전체"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setPeriod(key as RankingPeriod)}
+              className={`h-9 rounded border px-4 text-sm transition-colors ${
+                period === key
+                  ? "border-green-500 bg-green-500/15 text-green-300"
+                  : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+              }`}
+            >
+              {translate(label)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {[
             ["all", "전체"],
             ["member", "회원"],
             ["guest", "게스트"],
@@ -127,6 +186,62 @@ export default function RankingPage() {
             </button>
           ))}
         </div>
+
+        {myRanking && (
+          <section className="flex flex-col gap-3 rounded border border-blue-500/30 bg-blue-500/10 p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs text-blue-300">
+                {translate("내 현재 순위")}
+              </p>
+              <p className="mt-1 text-xl font-bold">
+                #{myRanking.ranking.rank} {myRanking.ranking.nickname}
+                <span className="ml-2 text-sm font-normal text-gray-400">
+                  / {myRanking.totalUsers}
+                </span>
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm md:flex md:items-center">
+              <div>
+                <p className="text-xs text-gray-500">{translate(scoreLabel)}</p>
+                <p className="font-bold">
+                  {formatNumber(myRanking.ranking.rankScore)} USDT
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{translate("수익률")}</p>
+                <p
+                  className={
+                    (period === "all"
+                      ? myRanking.ranking.profitRate
+                      : myRanking.ranking.periodProfitRate) >= 0
+                      ? "font-bold text-green-400"
+                      : "font-bold text-red-400"
+                  }
+                >
+                  {(period === "all"
+                    ? myRanking.ranking.profitRate
+                    : myRanking.ranking.periodProfitRate) >= 0
+                    ? "+"
+                    : ""}
+                  {formatNumber(
+                    period === "all"
+                      ? myRanking.ranking.profitRate
+                      : myRanking.ranking.periodProfitRate,
+                  )}
+                  %
+                </p>
+              </div>
+              {myRanking.ranking.isGuest && (
+                <Link
+                  href="/login"
+                  className="col-span-2 rounded bg-blue-600 px-4 py-2 text-center text-xs font-bold text-white hover:bg-blue-500 md:col-span-1"
+                >
+                  {translate("기록 저장하고 회원가입")}
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
 
         {loading ? (
           <div className="flex h-48 items-center justify-center text-sm text-gray-500">
@@ -156,18 +271,27 @@ export default function RankingPage() {
                     {row.nickname}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
-                    {translate("총 자산")}
+                    {translate(scoreLabel)}
                   </p>
                   <p className="text-xl font-bold">
-                    {formatNumber(row.totalEquity)} USDT
+                    {formatNumber(row.rankScore)} USDT
                   </p>
                   <p
                     className={`mt-2 text-sm ${
-                      row.profitRate >= 0 ? "text-green-400" : "text-red-400"
+                      (period === "all" ? row.profitRate : row.periodProfitRate) >=
+                      0
+                        ? "text-green-400"
+                        : "text-red-400"
                     }`}
                   >
-                    {row.profitRate >= 0 ? "+" : ""}
-                    {formatNumber(row.profitRate)}%
+                    {(period === "all" ? row.profitRate : row.periodProfitRate) >=
+                    0
+                      ? "+"
+                      : ""}
+                    {formatNumber(
+                      period === "all" ? row.profitRate : row.periodProfitRate,
+                    )}
+                    %
                   </p>
                 </div>
               ))}
@@ -181,7 +305,7 @@ export default function RankingPage() {
                       <th className="px-4 py-3 text-left">{translate("순위")}</th>
                       <th className="px-4 py-3 text-left">{translate("닉네임")}</th>
                       <th className="px-4 py-3 text-left">{translate("구분")}</th>
-                      <th className="px-4 py-3 text-right">{translate("총 자산")}</th>
+                      <th className="px-4 py-3 text-right">{translate(scoreLabel)}</th>
                       <th className="px-4 py-3 text-right">{translate("수익률")}</th>
                       <th className="px-4 py-3 text-right">{translate("실현 손익")}</th>
                       <th className="px-4 py-3 text-right">{translate("미실현 손익")}</th>
@@ -198,17 +322,28 @@ export default function RankingPage() {
                           {translate(row.isGuest ? "게스트" : "회원")}
                         </td>
                         <td className="px-4 py-3 text-right font-bold">
-                          {formatNumber(row.totalEquity)}
+                          {formatNumber(row.rankScore)}
                         </td>
                         <td
                           className={`px-4 py-3 text-right ${
-                            row.profitRate >= 0
+                            (period === "all"
+                              ? row.profitRate
+                              : row.periodProfitRate) >= 0
                               ? "text-green-400"
                               : "text-red-400"
                           }`}
                         >
-                          {row.profitRate >= 0 ? "+" : ""}
-                          {formatNumber(row.profitRate)}%
+                          {(period === "all"
+                            ? row.profitRate
+                            : row.periodProfitRate) >= 0
+                            ? "+"
+                            : ""}
+                          {formatNumber(
+                            period === "all"
+                              ? row.profitRate
+                              : row.periodProfitRate,
+                          )}
+                          %
                         </td>
                         <td className="px-4 py-3 text-right">
                           {formatNumber(row.realizedPnl)}
