@@ -18,14 +18,28 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { fetchMe } from "@/lib/queries";
 
+type InitialDepth = {
+  type?: string;
+  bids?: unknown[];
+  asks?: unknown[];
+};
+
+type InitialTrade = {
+  type?: string;
+  price?: string;
+  quantity?: string;
+  time?: number;
+  isBuy?: boolean;
+} | null;
+
 export default function FutureClientLayout({
   depth,
   trade,
   initialCandles = [],
 }: {
-  depth: any;
-  trade: any;
-  initialCandles?: any[];
+  depth: InitialDepth;
+  trade: InitialTrade;
+  initialCandles?: unknown[];
 }) {
   const [chartOpen, setChartOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -68,15 +82,22 @@ export default function FutureClientLayout({
           {/* PC 상단 헤더 - 로고 + 프로필 + 로그아웃 */}
           <div className="col-span-12 border-b border-gray-700 flex items-center justify-between px-4">
             {/* 로고 */}
-            <Link
-              href="/"
-              className="text-blue-400 font-bold text-base hover:text-blue-300 transition-colors"
-            >
-              BITHAMA
-            </Link>
+              <Link
+                href="/"
+                className="text-blue-400 font-bold text-base hover:text-blue-300 transition-colors"
+              >
+                BITHAMA
+              </Link>
 
-            {/* 우측 */}
-            <div className="flex items-center gap-3">
+              {/* 우측 */}
+              <div className="flex items-center gap-3">
+              <Link
+                href="/ranking"
+                className="text-gray-300 text-sm hover:text-white transition-colors"
+              >
+                랭킹
+              </Link>
+              <div className="w-px h-4 bg-gray-700" />
               {isLoggedIn && userInfo ? (
                 <>
                   <Link
@@ -158,6 +179,12 @@ export default function FutureClientLayout({
 
             {/* 우측 버튼 */}
             <div className="flex items-center gap-2">
+              <Link
+                href="/ranking"
+                className="px-2 py-1 rounded text-xs text-gray-300 border border-gray-700"
+              >
+                랭킹
+              </Link>
               {isLoggedIn && userInfo ? (
                 <>
                   <Link

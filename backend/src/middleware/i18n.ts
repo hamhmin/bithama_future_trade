@@ -90,6 +90,13 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "포지션이 강제청산됐어요!": "Position was liquidated!",
     "TP 목표가에 도달해 청산됐어요!": "TP reached. Position closed!",
     "SL 손절가에 도달해 청산됐어요!": "SL reached. Position closed!",
+    "관리자 비밀키가 설정되지 않았어요.": "Admin secret is not configured.",
+    "관리자 인증이 필요해요.": "Admin authentication is required.",
+    "잘못된 유저 ID예요.": "Invalid user ID.",
+    "회원 정보가 수정됐어요.": "Member updated.",
+    "지갑과 거래 기록이 초기화됐어요.":
+      "Wallet and trading history have been reset.",
+    "회원이 삭제됐어요.": "Member deleted.",
   },
   ja: {
     "로그인이 필요해요.": "ログインが必要です。",
@@ -174,6 +181,13 @@ const translations: Record<Exclude<Locale, "ko">, TranslationMap> = {
     "포지션이 강제청산됐어요!": "ポジションが強制決済されました！",
     "TP 목표가에 도달해 청산됐어요!": "TP目標価格に到達し決済されました！",
     "SL 손절가에 도달해 청산됐어요!": "SL損切り価格に到達し決済されました！",
+    "관리자 비밀키가 설정되지 않았어요。": "管理者シークレットが設定されていません。",
+    "관리자 비밀키가 설정되지 않았어요.": "管理者シークレットが設定されていません。",
+    "관리자 인증이 필요해요.": "管理者認証が必要です。",
+    "잘못된 유저 ID예요.": "無効なユーザーIDです。",
+    "회원 정보가 수정됐어요.": "会員情報を修正しました。",
+    "지갑과 거래 기록이 초기화됐어요.": "ウォレットと取引履歴を初期化しました。",
+    "회원이 삭제됐어요.": "会員を削除しました。",
   },
 };
 

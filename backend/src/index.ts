@@ -8,6 +8,8 @@ import { WebSocketServer } from "ws";
 import { startCandleSync } from "./candle.js";
 import candleRouter from "./routes/candle.js";
 import futureRouter from "./routes/future.js";
+import rankingRouter from "./routes/ranking.js";
+import adminRouter from "./routes/admin.js";
 import cookieParser from "cookie-parser";
 import { userSocketMap } from "./websocket.js";
 import { startFundingScheduler } from "./funding.js";
@@ -39,6 +41,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/candles", candleRouter);
 
 app.use("/api/future", futureRouter);
+app.use("/api/ranking", rankingRouter);
+app.use("/api/admin", adminRouter);
 
 // HTTP 서버 + WebSocket 서버 같이 생성
 const server = createServer(app);
